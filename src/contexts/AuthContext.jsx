@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo } from "react";
 import i18n from "../i18n/i18n";
-import { authService } from "../services/api";
+import { authService, userService } from "../services/api";
 import { resolveUserRole, isPendingInstructor } from "../lib/roles";
 import { formatErrorMessage } from "../lib/supabaseErrors";
 
@@ -9,7 +9,21 @@ const AuthContext = createContext(null);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    return {
+      user: null,
+      session: null,
+      isAuthenticated: false,
+      isLoading: true,
+      error: null,
+      login: async () => ({ success: false, error: "Auth not ready" }),
+      register: async () => ({ success: false, error: "Auth not ready" }),
+      logout: async () => ({ success: false, error: "Auth not ready" }),
+      resetPassword: async () => ({ success: false, error: "Auth not ready" }),
+      updatePassword: async () => ({ success: false, error: "Auth not ready" }),
+      updateProfile: async () => ({ success: false, error: "Auth not ready" }),
+      uploadAvatar: async () => ({ success: false, error: "Auth not ready" }),
+      checkUser: async () => null,
+    };
   }
   return context;
 };
@@ -19,6 +33,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const applyRoleFallback = (userData) => {
     if (!userData) return userData;
@@ -77,6 +92,7 @@ export const AuthProvider = ({ children }) => {
       if (!activeSession?.access_token) {
         setUser(null);
         setSession(null);
+        setHydrated(true);
         return;
       }
 
@@ -91,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       if (!profile) {
         setUser(null);
         setSession(null);
+        setHydrated(true);
         return;
       }
 
@@ -138,6 +155,7 @@ export const AuthProvider = ({ children }) => {
       }
     } finally {
       if (showLoading) setIsLoading(false);
+      setHydrated(true);
     }
   };
 
@@ -335,7 +353,7 @@ export const AuthProvider = ({ children }) => {
     user: effectiveUser,
     session,
     isAuthenticated: !!effectiveUser?.id,
-    isLoading,
+    isLoading: isLoading || !hydrated,
     error,
     login,
     register,

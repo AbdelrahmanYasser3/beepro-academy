@@ -50,6 +50,17 @@ class SupabaseEnrollmentRepository {
     if (error) throw error;
     return data;
   }
+
+  async delete(id, userId) {
+    if (!this.supabase) return { success: true };
+    const { error } = await this.supabase
+      .from("enrollments")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+    if (error) throw error;
+    return { success: true };
+  }
 }
 
 module.exports = SupabaseEnrollmentRepository;

@@ -70,9 +70,18 @@ const HeroSection = () => {
                   {t("landing.heroSecondaryCta")}
                 </a>
               </div>
-              <div className="hero-pill-row" aria-label={t("landing.heroPillsLabel")}>
-                {[t("landing.heroPill1"), t("landing.heroPill2"), t("landing.heroPill3")].map((item) => (
-                  <span key={item} className="hero-pill">{item}</span>
+              <div
+                className="hero-pill-row"
+                aria-label={t("landing.heroPillsLabel")}
+              >
+                {[
+                  t("landing.heroPill1"),
+                  t("landing.heroPill2"),
+                  t("landing.heroPill3"),
+                ].map((item) => (
+                  <span key={item} className="hero-pill">
+                    {item}
+                  </span>
                 ))}
               </div>
 
@@ -150,7 +159,9 @@ const VisionMissionSection = () => {
         <div className="vision-mission-header">
           <span className="vision-mission-badge">{t("landing.heroBrand")}</span>
           <h2>{t("landing.visionMissionTitle")}</h2>
-          <p className="vision-mission-subtitle">{t("landing.visionMissionSubtitle")}</p>
+          <p className="vision-mission-subtitle">
+            {t("landing.visionMissionSubtitle")}
+          </p>
         </div>
         <div className="vision-mission-grid">
           {cards.map(({ key, icon: Icon }) => (
@@ -181,11 +192,15 @@ const TeacherSignupSection = ({ onTeachClick }) => {
     <section className="teacher-signup-section" id="teach">
       <div className="teacher-signup-container">
         <div className="teacher-signup-content">
-          <span className="teacher-signup-badge">{t("landing.forEducators")}</span>
+          <span className="teacher-signup-badge">
+            {t("landing.forEducators")}
+          </span>
           <h2>{t("landing.teacherTitle")}</h2>
           <p>{t("landing.teacherSubtitle")}</p>
           <ul className="teacher-signup-benefits">
-            {benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}
+            {benefits.map((benefit) => (
+              <li key={benefit}>{benefit}</li>
+            ))}
           </ul>
           <button
             type="button"
@@ -228,7 +243,13 @@ const PlatformSection = () => {
                 animationDelay: `${0.1 * (index + 1)}s`,
                 textDecoration: "none",
               }}
-              onClick={() => trackEvent("course_view", { content_category: t(`landing.platformFeatures.${feature.key}.title`) })}
+              onClick={() =>
+                trackEvent("course_view", {
+                  content_category: t(
+                    `landing.platformFeatures.${feature.key}.title`,
+                  ),
+                })
+              }
             >
               <div className="feature-icon">
                 <feature.icon />
@@ -289,8 +310,20 @@ const StatsSection = () => {
           <h2>{t("landing.journeyTitle")}</h2>
           <div className="education-features">
             {features.map((feature) => (
-              <div key={feature} className="education-feature" style={{ backgroundColor: "rgba(148, 163, 184, 0.28)", padding: "0.5rem", borderRadius: "6px", backdropFilter: "blur(5px)", boxShadow: "0 4px 15px rgba(0,0,0,0.16)" }}>
-                <span className="feature-check"><FiCheckCircle /></span>
+              <div
+                key={feature}
+                className="education-feature"
+                style={{
+                  backgroundColor: "rgba(148, 163, 184, 0.28)",
+                  padding: "0.5rem",
+                  borderRadius: "6px",
+                  backdropFilter: "blur(5px)",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.16)",
+                }}
+              >
+                <span className="feature-check">
+                  <FiCheckCircle />
+                </span>
                 {feature}
               </div>
             ))}
@@ -305,36 +338,99 @@ const StatsSection = () => {
 const CategorySections = () => {
   const { t } = useTranslation();
   const categories = [
-    { id: "it", backgroundImage: "/assets/it2.jpg", icon: FiMonitor, color: "#4ECDC4", useVideo: false },
-    { id: "data", courseCategory: "data_analysis", backgroundImage: "/assets/data.jpg", icon: FiBarChart2, color: "#45B7D1", useVideo: false },
-    { id: "finance", courseCategory: "financial_markets", backgroundVideo: "/assets/eduvideo.mp4", backgroundImage: "/assets/anlysis.jpg", icon: FiTrendingUp, color: "#96CEB4", useVideo: true },
+    {
+      id: "it",
+      backgroundImage: "/assets/it2.jpg",
+      icon: FiMonitor,
+      color: "#4ECDC4",
+      useVideo: false,
+    },
+    {
+      id: "data",
+      courseCategory: "data_analysis",
+      backgroundImage: "/assets/data.jpg",
+      icon: FiBarChart2,
+      color: "#45B7D1",
+      useVideo: false,
+    },
+    {
+      id: "finance",
+      courseCategory: "financial_markets",
+      backgroundVideo: "/assets/eduvideo.mp4",
+      backgroundImage: "/assets/anlysis.jpg",
+      icon: FiTrendingUp,
+      color: "#96CEB4",
+      useVideo: true,
+    },
   ];
 
   return (
     <section className="category-sections">
       {categories.map((category, index) => {
-        const features = t(`landing.categories.${category.id}.features`, { returnObjects: true });
+        const features = t(`landing.categories.${category.id}.features`, {
+          returnObjects: true,
+        });
         return (
-          <div key={category.id} className={`category-section category-section-${index % 2 === 0 ? "left" : "right"}`} id={category.id} style={{ "--category-color": category.color }}>
+          <div
+            key={category.id}
+            className={`category-section category-section-${index % 2 === 0 ? "left" : "right"}`}
+            id={category.id}
+            style={{ "--category-color": category.color }}
+          >
             {category.useVideo ? (
-              <video className="category-video-bg" autoPlay muted loop playsInline disablePictureInPicture controlsList="nodownload nofullscreen noremoteplayback" style={{ pointerEvents: "none" }} poster={category.backgroundImage}>
+              <video
+                className="category-video-bg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+                style={{ pointerEvents: "none" }}
+                poster={category.backgroundImage}
+              >
                 <source src={category.backgroundVideo} type="video/mp4" />
               </video>
             ) : (
-              <div className="category-background" style={{ backgroundImage: `url(${category.backgroundImage})` }} />
+              <div
+                className="category-background"
+                style={{ backgroundImage: `url(${category.backgroundImage})` }}
+              />
             )}
             <div className="category-overlay" />
             <div className="category-content">
-              <div className="category-icon"><category.icon /></div>
-              <h2 className="category-title">{t(`landing.categories.${category.id}.title`)}</h2>
-              <p className="category-subtitle">{t(`landing.categories.${category.id}.subtitle`)}</p>
-              <p className="category-description">{t(`landing.categories.${category.id}.description`)}</p>
+              <div className="category-icon">
+                <category.icon />
+              </div>
+              <h2 className="category-title">
+                {t(`landing.categories.${category.id}.title`)}
+              </h2>
+              <p className="category-subtitle">
+                {t(`landing.categories.${category.id}.subtitle`)}
+              </p>
+              <p className="category-description">
+                {t(`landing.categories.${category.id}.description`)}
+              </p>
               <div className="category-features">
-                {features.map((feature) => <span key={feature} className="category-feature-tag">{feature}</span>)}
+                {features.map((feature) => (
+                  <span key={feature} className="category-feature-tag">
+                    {feature}
+                  </span>
+                ))}
               </div>
               <div className="category-buttons">
-                <Link to={`/courses?category=${category.courseCategory || category.id}`} className="category-btn primary">{t("landing.viewCourses")}</Link>
-                <a href={`#${category.id}-details`} className="category-btn secondary">{t("landing.learnMore")}</a>
+                <Link
+                  to={`/courses?category=${category.courseCategory || category.id}`}
+                  className="category-btn primary"
+                >
+                  {t("landing.viewCourses")}
+                </Link>
+                <a
+                  href={`#${category.id}-details`}
+                  className="category-btn secondary"
+                >
+                  {t("landing.learnMore")}
+                </a>
               </div>
             </div>
           </div>
@@ -359,8 +455,16 @@ const ChatbotWidget = () => {
 
   useEffect(() => {
     setMessages([
-      { type: "bot", text: t("landing.botWelcome1"), time: t("landing.justNow") },
-      { type: "bot", text: t("landing.botWelcome2"), time: t("landing.justNow") },
+      {
+        type: "bot",
+        text: t("landing.botWelcome1"),
+        time: t("landing.justNow"),
+      },
+      {
+        type: "bot",
+        text: t("landing.botWelcome2"),
+        time: t("landing.justNow"),
+      },
     ]);
   }, [i18n.language, t]);
 
@@ -377,58 +481,159 @@ const ChatbotWidget = () => {
 
   const generateBotResponse = (userMessage) => {
     const lowerMessage = userMessage.toLowerCase();
-    if (lowerMessage.includes("course") || lowerMessage.includes("program") || lowerMessage.includes(t("landing.quickCourseQuery").toLowerCase())) return t("landing.botCourseReply");
-    if (lowerMessage.includes("price") || lowerMessage.includes("cost") || lowerMessage.includes(t("landing.quickPricingQuery").toLowerCase())) return t("landing.botPricingReply");
-    if (lowerMessage.includes("certif") || lowerMessage.includes(t("landing.quickCertificationQuery").toLowerCase())) return t("landing.botCertificationReply");
-    if (lowerMessage.includes("start") || lowerMessage.includes("begin") || lowerMessage.includes(t("landing.quickStartQuery").toLowerCase())) return t("landing.botStartReply");
-    if (lowerMessage.includes("support") || lowerMessage.includes("help")) return t("landing.botSupportReply");
+    if (
+      lowerMessage.includes("course") ||
+      lowerMessage.includes("program") ||
+      lowerMessage.includes(t("landing.quickCourseQuery").toLowerCase())
+    )
+      return t("landing.botCourseReply");
+    if (
+      lowerMessage.includes("price") ||
+      lowerMessage.includes("cost") ||
+      lowerMessage.includes(t("landing.quickPricingQuery").toLowerCase())
+    )
+      return t("landing.botPricingReply");
+    if (
+      lowerMessage.includes("certif") ||
+      lowerMessage.includes(t("landing.quickCertificationQuery").toLowerCase())
+    )
+      return t("landing.botCertificationReply");
+    if (
+      lowerMessage.includes("start") ||
+      lowerMessage.includes("begin") ||
+      lowerMessage.includes(t("landing.quickStartQuery").toLowerCase())
+    )
+      return t("landing.botStartReply");
+    if (lowerMessage.includes("support") || lowerMessage.includes("help"))
+      return t("landing.botSupportReply");
     return t("landing.botDefaultReply");
   };
 
-  const getCurrentTime = () => new Intl.DateTimeFormat(i18n.language === "ar" ? "ar-EG" : "en-US", { hour: "numeric", minute: "2-digit" }).format(new Date());
+  const getCurrentTime = () =>
+    new Intl.DateTimeFormat(i18n.language === "ar" ? "ar-EG" : "en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date());
 
   const sendMessage = (text = inputValue) => {
     if (!text.trim()) return;
-    setMessages((prev) => [...prev, { type: "user", text: text.trim(), time: getCurrentTime() }]);
+    setMessages((prev) => [
+      ...prev,
+      { type: "user", text: text.trim(), time: getCurrentTime() },
+    ]);
     setInputValue("");
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
-      setMessages((prev) => [...prev, { type: "bot", text: generateBotResponse(text), time: getCurrentTime() }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "bot",
+          text: generateBotResponse(text),
+          time: getCurrentTime(),
+        },
+      ]);
     }, 900);
   };
 
   const quickReplies = [
-    { icon: FiBookOpen, text: t("landing.quickCourseInfo"), query: t("landing.quickCourseQuery") },
-    { icon: FiAward, text: t("landing.quickCertifications"), query: t("landing.quickCertificationQuery") },
-    { icon: FiTrendingUp, text: t("landing.quickPricing"), query: t("landing.quickPricingQuery") },
-    { icon: FiTarget, text: t("landing.quickGetStarted"), query: t("landing.quickStartQuery") },
+    {
+      icon: FiBookOpen,
+      text: t("landing.quickCourseInfo"),
+      query: t("landing.quickCourseQuery"),
+    },
+    {
+      icon: FiAward,
+      text: t("landing.quickCertifications"),
+      query: t("landing.quickCertificationQuery"),
+    },
+    {
+      icon: FiTrendingUp,
+      text: t("landing.quickPricing"),
+      query: t("landing.quickPricingQuery"),
+    },
+    {
+      icon: FiTarget,
+      text: t("landing.quickGetStarted"),
+      query: t("landing.quickStartQuery"),
+    },
   ];
 
   return (
     <div className="chatbot-widget">
-      <button type="button" className={`chatbot-button ${isOpen ? "active" : ""}`} onClick={() => { setIsOpen(!isOpen); setShowNotification(false); }} aria-label={t("landing.assistantName")}>
-        {showNotification && !isOpen && <div className="chat-notification">1</div>}
+      <button
+        type="button"
+        className={`chatbot-button ${isOpen ? "active" : ""}`}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setShowNotification(false);
+        }}
+        aria-label={t("landing.assistantName")}
+      >
+        {showNotification && !isOpen && (
+          <div className="chat-notification">1</div>
+        )}
         <FiMessageCircle className="chat-icon" />
         <span className="close-icon">x</span>
       </button>
 
       <div className={`chatbot-window ${isOpen ? "active" : ""}`}>
         <div className="chat-header">
-          <div className="bot-avatar"><FiMessageCircle /><div className="online-indicator"></div></div>
-          <div className="chat-header-info"><h3>{t("landing.assistantName")}</h3><p>{t("landing.assistantTagline")}</p></div>
+          <div className="bot-avatar">
+            <FiMessageCircle />
+            <div className="online-indicator"></div>
+          </div>
+          <div className="chat-header-info">
+            <h3>{t("landing.assistantName")}</h3>
+            <p>{t("landing.assistantTagline")}</p>
+          </div>
         </div>
         <div className="chat-messages">
-          {messages.map((msg, index) => <div key={index} className={`message ${msg.type}`}><div style={{ whiteSpace: "pre-line" }}>{msg.text}</div><div className="message-time">{msg.time}</div></div>)}
-          {isTyping && <div className="typing-indicator" aria-label={t("common.loading")}><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div>}
+          {messages.map((msg, index) => (
+            <div key={index} className={`message ${msg.type}`}>
+              <div style={{ whiteSpace: "pre-line" }}>{msg.text}</div>
+              <div className="message-time">{msg.time}</div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="typing-indicator" aria-label={t("common.loading")}>
+              <div className="typing-dot"></div>
+              <div className="typing-dot"></div>
+              <div className="typing-dot"></div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
         <div className="quick-replies">
-          {quickReplies.map((reply) => <button type="button" key={reply.text} className="quick-reply" onClick={() => sendMessage(reply.query)}><reply.icon />{reply.text}</button>)}
+          {quickReplies.map((reply) => (
+            <button
+              type="button"
+              key={reply.text}
+              className="quick-reply"
+              onClick={() => sendMessage(reply.query)}
+            >
+              <reply.icon />
+              {reply.text}
+            </button>
+          ))}
         </div>
         <div className="chat-input-container">
-          <input type="text" className="chat-input" placeholder={t("landing.chatPlaceholder")} value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()} />
-          <button type="button" className="send-button" onClick={() => sendMessage()} aria-label={t("landing.sendMessage")}><FiMessageCircle className="send-icon" /></button>
+          <input
+            type="text"
+            className="chat-input"
+            placeholder={t("landing.chatPlaceholder")}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          />
+          <button
+            type="button"
+            className="send-button"
+            onClick={() => sendMessage()}
+            aria-label={t("landing.sendMessage")}
+          >
+            <FiMessageCircle className="send-icon" />
+          </button>
         </div>
       </div>
     </div>
@@ -514,6 +719,7 @@ const LandingPage = () => {
 
   const closeAuthModal = () => {
     setAuthModal({ isOpen: false, tab: "login" });
+
     const next = new URLSearchParams(searchParams);
     next.delete("auth");
     next.delete("role");
@@ -543,4 +749,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-

@@ -1,81 +1,115 @@
-import { useState, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { getLandingAuthUrl } from '../../lib/authRoutes'
-import { useTranslation } from 'react-i18next'
-import { useTheme } from '../../contexts/ThemeContext'
-import { useLanguage } from '../../contexts/LanguageContext'
-import { useAuth } from '../../contexts/AuthContext'
-import { 
-  FiMenu, 
-  FiX, 
-  FiSun, 
-  FiMoon, 
-  FiGlobe, 
-  FiUser, 
+import { useState, useEffect, useRef } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { getLandingAuthUrl } from "../../lib/authRoutes";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  FiMenu,
+  FiX,
+  FiSun,
+  FiMoon,
+  FiGlobe,
+  FiUser,
   FiLogOut,
   FiGrid,
   FiChevronDown,
-  FiMessageCircle
-} from 'react-icons/fi'
-import StudentNotificationsBell from '../notifications/StudentNotificationsBell'
-import StudentChatBell from '../chat/StudentChatBell'
-import { resolveUserRole, shouldShowStudentChatBell } from '../../lib/roles'
+  FiMessageCircle,
+} from "react-icons/fi";
+import StudentNotificationsBell from "../notifications/StudentNotificationsBell";
+import StudentChatBell from "../chat/StudentChatBell";
+import { resolveUserRole, shouldShowStudentChatBell } from "../../lib/roles";
 
 const Navbar = () => {
-  const { t } = useTranslation()
-  const { isDarkMode, toggleDarkMode } = useTheme()
-  const { language, toggleLanguage } = useLanguage()
-  const { user, isAuthenticated, logout } = useAuth()
-  const navigate = useNavigate()
-  const showChatBell = shouldShowStudentChatBell(user)
-  
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const { t } = useTranslation();
+  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { language, toggleLanguage } = useLanguage();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+  const showChatBell = shouldShowStudentChatBell(user);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!isProfileOpen) return;
+
+    const handlePointerDown = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isProfileOpen]);
 
   const handleLogout = () => {
-    logout()
-    navigate('/')
-    setIsProfileOpen(false)
-  }
+    logout();
+    navigate("/");
+    setIsProfileOpen(false);
+  };
 
-  const displayName = user?.full_name || user?.name || user?.email?.split('@')[0] || 'User'
-  const displayEmail = user?.email || ''
-  const normalizedRole = resolveUserRole(user)
-  const roleLabel = {
-    student: t('roles.student'),
-    teacher: t('roles.teacher'),
-    admin: t('roles.admin')
-  }[normalizedRole] || normalizedRole
+  const displayName =
+    user?.full_name || user?.name || user?.email?.split("@")[0] || "User";
+  const displayEmail = user?.email || "";
+  const normalizedRole = resolveUserRole(user);
+  const roleLabel =
+    {
+      student: t("roles.student"),
+      teacher: t("roles.teacher"),
+      admin: t("roles.admin"),
+    }[normalizedRole] || normalizedRole;
 
   const navLinks = [
-    { to: '/', label: t('nav.home') },
-    { to: '/courses', label: t('nav.courses') },
-    { to: '/categories', label: t('nav.categories') },
-    { to: '/about', label: t('nav.about') },
-    { to: '/contact', label: t('nav.contact') },
-  ]
+    { to: "/", label: t("nav.home") },
+    { to: "/courses", label: t("nav.courses") },
+    { to: "/categories", label: t("nav.categories") },
+    { to: "/about", label: t("nav.about") },
+    { to: "/contact", label: t("nav.contact") },
+  ];
 
   return (
-    <nav 
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white backdrop-blur-md shadow-lg border-b border-white/90' 
-          : 'bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/70'
+    <nav
+      className={`fixed top-0 inset-x-0 z-50 overflow-visible transition-all duration-300 ${
+        isScrolled
+          ? "bg-white backdrop-blur-md shadow-lg border-b border-white/90"
+          : "bg-white/95 backdrop-blur-sm shadow-sm border-b border-white/70"
       }`}
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
-          <Link to="/" className="flex items-center shrink-0" aria-label="BeePro Academy">
+          <Link
+            to="/"
+            className="flex items-center shrink-0"
+            aria-label="BeePro Academy"
+          >
             <img
               src="/assets/platform-logo.png"
               alt="BeePro Academy"
@@ -90,7 +124,7 @@ const Navbar = () => {
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `nav-link ${isActive ? 'nav-link-active' : ''}`
+                  `nav-link ${isActive ? "nav-link-active" : ""}`
                 }
               >
                 {link.label}
@@ -104,7 +138,7 @@ const Navbar = () => {
             <button
               onClick={toggleLanguage}
               className="btn-ghost p-2 rounded-lg hidden sm:inline-flex"
-              title={t('language.english')}
+              title={t("language.english")}
             >
               <FiGlobe className="w-5 h-5" />
             </button>
@@ -113,7 +147,7 @@ const Navbar = () => {
             <button
               onClick={toggleDarkMode}
               className="btn-ghost p-2 rounded-lg hidden sm:inline-flex"
-              title={isDarkMode ? t('nav.lightMode') : t('nav.darkMode')}
+              title={isDarkMode ? t("nav.lightMode") : t("nav.darkMode")}
             >
               {isDarkMode ? (
                 <FiSun className="w-5 h-5" />
@@ -129,87 +163,105 @@ const Navbar = () => {
                   <StudentNotificationsBell />
                   {showChatBell && <StudentChatBell />}
                 </div>
-              <div className="relative shrink-0 min-w-0">
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center gap-2 btn-ghost px-3 py-2 rounded-lg"
-                >
-                  {user?.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt={displayName}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                      <FiUser className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                  <div className="hidden md:flex flex-col items-start leading-tight">
-                    <span className="text-sm font-medium max-w-[180px] truncate">{displayName}</span>
-                    {displayEmail && (
-                      <span className="text-xs text-secondary-500 max-w-[180px] truncate">{displayEmail}</span>
+                <div className="relative shrink-0 min-w-0" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center gap-2 btn-ghost px-3 py-2 rounded-lg"
+                  >
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt={displayName}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                        <FiUser className="w-4 h-4 text-white" />
+                      </div>
                     )}
-                  </div>
-                  <FiChevronDown className={`w-4 h-4 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {/* Profile Dropdown */}
-                {isProfileOpen && (
-                  <div className="absolute top-full end-0 mt-2 w-48 bg-white dark:bg-dark-card rounded-xl shadow-lg border border-secondary-100 dark:border-dark-border overflow-hidden animate-slide-down">
-                    <div className="px-4 py-3 border-b border-secondary-100 dark:border-dark-border">
-                      <p className="text-sm font-semibold truncate">{displayName}</p>
-                      {displayEmail && <p className="text-xs text-secondary-500 truncate mt-0.5">{displayEmail}</p>}
-                      <span className="inline-flex mt-2 px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                        {roleLabel}
+                    <div className="hidden md:flex flex-col items-start leading-tight">
+                      <span className="text-sm font-medium max-w-[180px] truncate">
+                        {displayName}
                       </span>
+                      {displayEmail && (
+                        <span className="text-xs text-secondary-500 max-w-[180px] truncate">
+                          {displayEmail}
+                        </span>
+                      )}
                     </div>
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-secondary-50 dark:hover:bg-dark-border transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <FiGrid className="w-5 h-5" />
-                      <span>{t('nav.dashboard')}</span>
-                    </Link>
-                    {showChatBell && (
+                    <FiChevronDown
+                      className={`w-4 h-4 transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {/* Profile Dropdown */}
+                  {isProfileOpen && (
+                    <div className="absolute top-[calc(100%+10px)] end-0 z-[1100] mt-1 w-56 max-w-[calc(100vw-1rem)] bg-white dark:bg-dark-card rounded-xl shadow-lg border border-secondary-100 dark:border-dark-border overflow-visible animate-slide-down">
+                      <div className="px-4 py-3 border-b border-secondary-100 dark:border-dark-border">
+                        <p className="text-sm font-semibold truncate">
+                          {displayName}
+                        </p>
+                        {displayEmail && (
+                          <p className="text-xs text-secondary-500 truncate mt-0.5">
+                            {displayEmail}
+                          </p>
+                        )}
+                        <span className="inline-flex mt-2 px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                          {roleLabel}
+                        </span>
+                      </div>
                       <Link
-                        to="/courses"
+                        to="/dashboard"
                         className="flex items-center gap-3 px-4 py-3 hover:bg-secondary-50 dark:hover:bg-dark-border transition-colors"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <FiMessageCircle className="w-5 h-5" />
-                        <span>{t('dashboardExtra.instructorChat')}</span>
+                        <FiGrid className="w-5 h-5" />
+                        <span>{t("nav.dashboard")}</span>
                       </Link>
-                    )}
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-secondary-50 dark:hover:bg-dark-border transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <FiUser className="w-5 h-5" />
-                      <span>{t('nav.profile')}</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors"
-                    >
-                      <FiLogOut className="w-5 h-5" />
-                      <span>{t('nav.logout')}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                      {showChatBell && (
+                        <Link
+                          to="/courses"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-secondary-50 dark:hover:bg-dark-border transition-colors"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          <FiMessageCircle className="w-5 h-5" />
+                          <span>{t("dashboardExtra.instructorChat")}</span>
+                        </Link>
+                      )}
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-secondary-50 dark:hover:bg-dark-border transition-colors"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <FiUser className="w-5 h-5" />
+                        <span>{t("nav.profile")}</span>
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors"
+                      >
+                        <FiLogOut className="w-5 h-5" />
+                        <span>{t("nav.logout")}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <div className="hidden md:flex items-center gap-3">
-                <Link to={getLandingAuthUrl('login')} className="btn-ghost px-4 py-2 rounded-lg">
-                  {t('nav.login')}
+                <Link
+                  to={getLandingAuthUrl("login")}
+                  className="btn-ghost px-4 py-2 rounded-lg"
+                >
+                  {t("nav.login")}
                 </Link>
-                <Link to="/register?role=teacher" className="btn-ghost px-4 py-2 rounded-lg">
-                  {t('nav.teach')}
+                <Link
+                  to="/register?role=teacher"
+                  className="btn-ghost px-4 py-2 rounded-lg"
+                >
+                  {t("nav.teach")}
                 </Link>
                 <Link to="/register" className="btn btn-primary">
-                  {t('nav.register')}
+                  {t("nav.register")}
                 </Link>
               </div>
             )}
@@ -236,7 +288,7 @@ const Navbar = () => {
                   <StudentNotificationsBell />
                   {showChatBell && <StudentChatBell />}
                   <span className="text-sm text-secondary-500">
-                    {t('navExtra.alertsAndChat')}
+                    {t("navExtra.alertsAndChat")}
                   </span>
                 </div>
               )}
@@ -247,9 +299,9 @@ const Navbar = () => {
                   to={link.to}
                   className={({ isActive }) =>
                     `block py-3 px-4 rounded-lg transition-colors ${
-                      isActive 
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600' 
-                        : 'hover:bg-secondary-50 dark:hover:bg-dark-border'
+                      isActive
+                        ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600"
+                        : "hover:bg-secondary-50 dark:hover:bg-dark-border"
                     }`
                   }
                   onClick={() => setIsMenuOpen(false)}
@@ -257,7 +309,7 @@ const Navbar = () => {
                   {link.label}
                 </NavLink>
               ))}
-              
+
               {isAuthenticated && showChatBell && (
                 <div className="mt-4 pt-4 border-t border-secondary-100 dark:border-dark-border md:hidden">
                   <Link
@@ -266,26 +318,26 @@ const Navbar = () => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <FiMessageCircle className="w-5 h-5 text-primary-500" />
-                    <span>{t('dashboardExtra.instructorChat')}</span>
+                    <span>{t("dashboardExtra.instructorChat")}</span>
                   </Link>
                 </div>
               )}
 
               {!isAuthenticated && (
                 <div className="mt-4 pt-4 border-t border-secondary-100 dark:border-dark-border flex flex-col gap-3">
-                  <Link 
-                    to={getLandingAuthUrl('login')} 
+                  <Link
+                    to={getLandingAuthUrl("login")}
                     className="btn btn-secondary w-full"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    {t('nav.login')}
+                    {t("nav.login")}
                   </Link>
-                  <Link 
-                    to="/register" 
+                  <Link
+                    to="/register"
                     className="btn btn-primary w-full"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    {t('nav.register')}
+                    {t("nav.register")}
                   </Link>
                 </div>
               )}
@@ -294,7 +346,7 @@ const Navbar = () => {
         )}
       </div>
     </nav>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

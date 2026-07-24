@@ -3,6 +3,7 @@ import { FiMessageCircle, FiSend, FiUser } from "react-icons/fi";
 import { chatService } from "../../services/api";
 import { requireInstructor } from "../../lib/authGuards";
 import "./CourseChat.css";
+import "./chat.css";
 import { useTranslation } from "react-i18next";
 
 const CourseChat = ({
@@ -27,6 +28,19 @@ const CourseChat = ({
 
   const isAr = language === "ar";
   const isInstructor = user?.id === instructorId || requireInstructor(user);
+
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200,
+  );
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const isFloating = viewportWidth >= 1200;
+  const isMobile = viewportWidth < 768;
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
@@ -286,7 +300,11 @@ const CourseChat = ({
     : [];
 
   return (
-    <div className="course-chat container-fluid py-3">
+    <div
+      className={`course-chat container-fluid py-3 ${
+        isFloating ? "course-chat--floating" : ""
+      } ${isMobile ? "course-chat--mobile" : ""}`}
+    >
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div className="d-flex align-items-center gap-2">
@@ -372,71 +390,69 @@ const CourseChat = ({
 
         {/* Chat */}
         <div className={isInstructor ? "col-12 col-lg-8" : "col-12"}>
-          <div className="card shadow-sm h-100">
-            <div
-              className="card-body"
-              style={{
-                height: "65vh",
-                overflowY: "auto",
-              }}
-            >
-              {!activeConversation ? (
-                <div className="h-100 d-flex justify-content-center align-items-center text-muted">
-                  {isInstructor
-                    ? t("courseChat.selectAStudentFromTheListToSta")
-                    : error || t("courseChat.couldNotOpenTheConversation")}
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="h-100 d-flex justify-content-center align-items-center text-muted">
-                  {t("courseChat.startChattingNow")}
-                </div>
-              ) : (
-                messages.map((msg) => {
-                  const isMine = msg.sender_id === user?.id;
+          <div className="card shadow-sm h-100 course-chat__card">
+            <div className="card-body course-chat__body">
+              <div className="course-chat__messages">
+                {!activeConversation ? (
+                  <div className="h-100 d-flex justify-content-center align-items-center text-muted">
+                    {isInstructor
+                      ? t("courseChat.selectAStudentFromTheListToSta")
+                      : error || t("courseChat.couldNotOpenTheConversation")}
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="h-100 d-flex justify-content-center align-items-center text-muted">
+                    {t("courseChat.startChattingNow")}
+                  </div>
+                ) : (
+                  messages.map((msg) => {
+                    const isMine = msg.sender_id === user?.id;
 
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`d-flex mb-3 ${
-                        isMine ? "justify-content-end" : "justify-content-start"
-                      }`}
-                    >
+                    return (
                       <div
-                        className={`p-3 rounded shadow-sm ${
-                          isMine ? "bg-primary text-white" : "bg-light"
+                        key={msg.id}
+                        className={`d-flex mb-3 ${
+                          isMine
+                            ? "justify-content-end"
+                            : "justify-content-start"
                         }`}
-                        style={{
-                          maxWidth: "80%",
-                          wordBreak: "break-word",
-                        }}
                       >
-                        <strong className="d-block mb-1">
-                          {isMine
-                            ? t("courseChat.you")
-                            : msg.sender?.full_name ||
-                              (isInstructor
-                                ? t("dashboardExtra.student")
-                                : t("courseChat.instructor"))}
-                        </strong>
+                        <div
+                          className={`p-3 rounded shadow-sm ${
+                            isMine ? "bg-primary text-white" : "bg-light"
+                          }`}
+                          style={{
+                            maxWidth: "80%",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          <strong className="d-block mb-1">
+                            {isMine
+                              ? t("courseChat.you")
+                              : msg.sender?.full_name ||
+                                (isInstructor
+                                  ? t("dashboardExtra.student")
+                                  : t("courseChat.instructor"))}
+                          </strong>
 
-                        <p className="mb-1">{msg.content}</p>
+                          <p className="mb-1">{msg.content}</p>
 
-                        <small className="opacity-75">
-                          {new Date(msg.created_at).toLocaleTimeString(
-                            "en-US",
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )}
-                        </small>
+                          <small className="opacity-75">
+                            {new Date(msg.created_at).toLocaleTimeString(
+                              "en-US",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
+                          </small>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
 
-              <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} />
+              </div>
             </div>
 
             {error && (
@@ -444,7 +460,7 @@ const CourseChat = ({
             )}
 
             {activeConversation && (
-              <div className="card-footer">
+              <div className="card-footer course-chat__input">
                 <form onSubmit={handleSend} className="row g-2">
                   <div className="col">
                     <input

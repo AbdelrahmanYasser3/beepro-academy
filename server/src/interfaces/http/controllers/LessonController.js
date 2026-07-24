@@ -35,7 +35,9 @@ class LessonController {
 
   create = async (req, res, next) => {
     try {
-      const data = req.body;
+      const data = req.params.courseId
+        ? { ...req.body, course_id: req.params.courseId }
+        : req.body;
       const result = await this.createUseCase.execute({ data });
       res.status(201).json({ success: true, data: result });
     } catch (err) {

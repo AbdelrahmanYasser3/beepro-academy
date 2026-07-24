@@ -4,11 +4,13 @@ class EnrollmentController {
     getUseCase,
     isEnrolledUseCase,
     updateProgressUseCase,
+    deleteUseCase,
   }) {
     this.enrollUseCase = enrollUseCase;
     this.getUseCase = getUseCase;
     this.isEnrolledUseCase = isEnrolledUseCase;
     this.updateProgressUseCase = updateProgressUseCase;
+    this.deleteUseCase = deleteUseCase;
   }
 
   enroll = async (req, res, next) => {
@@ -16,6 +18,18 @@ class EnrollmentController {
       const { courseId } = req.body;
       const userId = req.user?.id;
       const result = await this.enrollUseCase.execute({ courseId, userId });
+      res.status(201).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  delete = async (req, res, next) => {
+    try {
+      const result = await this.deleteUseCase.execute({
+        id: req.params.id,
+        userId: req.user?.id,
+      });
       res.status(200).json({ success: true, data: result });
     } catch (err) {
       next(err);

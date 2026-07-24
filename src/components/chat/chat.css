@@ -1,0 +1,121 @@
+/* Shared chat responsive styles for CourseChat and StudentChatBell */
+
+/* Floating chat widget (desktop >=1200px) */
+.course-chat--floating .course-chat__card {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: clamp(360px, 20vw, 420px);
+    height: clamp(600px, 60vh, 700px);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 1060;
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12), 0 6px 12px rgba(2, 6, 23, 0.06);
+}
+
+.course-chat--floating .course-chat__body {
+    height: calc(100% - 120px);
+    overflow-y: auto;
+}
+
+.course-chat--floating .course-chat__students-body {
+    max-height: calc(100% - 120px);
+    overflow-y: auto;
+}
+
+.course-chat--floating .card-footer,
+.course-chat--floating .course-chat__input {
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg, #fff);
+    z-index: 1062;
+}
+
+/* Tablet adjustments (768px - 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .course-chat--floating .course-chat__card {
+        width: clamp(320px, 32vw, 360px);
+        height: clamp(520px, 56vh, 620px);
+        right: 16px;
+        bottom: 16px;
+    }
+}
+
+/* Mobile: full-screen or near-full-screen */
+@media (max-width: 767px) {
+    .course-chat--mobile .course-chat__card {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 8px;
+        top: 8px;
+        width: calc(100vw - 24px);
+        height: 80vh;
+        border-radius: 10px;
+        z-index: 1080;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .course-chat--mobile .course-chat__body {
+        height: calc(100% - 140px);
+        overflow-y: auto;
+    }
+
+    .course-chat--mobile .course-chat__students-body {
+        max-height: 120px;
+        overflow-y: auto;
+    }
+
+    .course-chat__input input {
+        padding: 12px 14px;
+        font-size: 1rem;
+    }
+
+    .course-chat__input button {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+    }
+}
+
+/* Make message container scroll nicely and avoid input overlap */
+.course-chat__body {
+    display: flex;
+    flex-direction: column;
+}
+
+.course-chat__messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure input is visible and accessible */
+.course-chat__input {
+    padding: 10px 12px;
+}
+
+/* StudentChatBell dropdown shared styles */
+.student-chat-bell__dropdown {
+    position: absolute;
+    right: 0;
+    left: auto;
+    z-index: 1055;
+    width: 100%;
+    min-width: 280px;
+    max-width: 420px;
+}
+
+@media (max-width: 767px) {
+    .student-chat-bell__dropdown {
+        position: fixed;
+        right: 12px;
+        left: 12px;
+        bottom: 12px;
+        top: auto;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+}

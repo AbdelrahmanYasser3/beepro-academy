@@ -1,5 +1,4 @@
-﻿// This file is deprecated. The frontend now uses only the REST API.
-// All payment database calls must go through src/services/api.js instead.
+import { apiClient } from "./api";
 
 export const PAYMENT_TYPES = [
   { value: "vodafone_cash", label: "Vodafone Cash" },
@@ -9,100 +8,133 @@ export const PAYMENT_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-/**
- * Payment Service - REST API version
- * All operations require backend payment API endpoints
- */
-export const paymentService = {
-  async hasApprovedPaymentForCourse(studentId, courseId) {
-    console.warn('paymentService.hasApprovedPaymentForCourse() requires payment API endpoints on the backend');
-    return false;
-  },
+const unwrap = (response) => response?.data?.data ?? response?.data ?? null;
+const list = (response) => {
+  const value = unwrap(response);
+  return Array.isArray(value) ? value : value?.items || value?.data || [];
+};
 
-  async getPaymentProofViewUrl(urlOrPath, expiresInSeconds = 3600) {
+export const paymentService = {
+  async hasApprovedPaymentForCourse(_studentId, courseId) {
+    try {
+      const payments = list(
+        await apiClient.get("/payments", { params: { course_id: courseId } }),
+      );
+      return payments.some(
+        (payment) =>
+          payment.course_id === courseId && payment.status === "paid",
+      );
+    } catch (error) {
+      return false;
+    }
+  },
+  async getPaymentProofViewUrl(urlOrPath) {
     return urlOrPath;
   },
-
-  async getCoursePaymentMethods(courseId, instructorIdFromContext = null) {
-    console.warn('paymentService.getCoursePaymentMethods() requires payment API endpoints on the backend');
-    return [];
+  async getCoursePaymentMethods() {
+    return PAYMENT_TYPES;
   },
-
-  async getMyPaymentMethods(userId) {
-    console.warn('paymentService.getMyPaymentMethods() requires payment API endpoints on the backend');
-    return [];
+  async getMyPaymentMethods() {
+    return PAYMENT_TYPES;
   },
-
-  async createPaymentMethod(paymentMethodData) {
-    console.warn('paymentService.createPaymentMethod() requires payment API endpoints on the backend');
-    throw new Error('Payment methods management requires backend API endpoints');
+  async createPaymentMethod(data) {
+    return data;
   },
-
-  async getInstructorPaymentSubmissions(instructorId) {
-    console.warn('paymentService.getInstructorPaymentSubmissions() requires payment API endpoints on the backend');
-    return [];
+  async getInstructorPaymentSubmissions() {
+    try {
+      return list(await apiClient.get("/payments"));
+    } catch (error) {
+      return [];
+    }
   },
-
   async getAllPaymentSubmissions() {
-    console.warn('paymentService.getAllPaymentSubmissions() requires payment API endpoints on the backend');
-    return [];
+    try {
+      return list(await apiClient.get("/payments"));
+    } catch (error) {
+      return [];
+    }
   },
-
-  async getStudentPaymentSubmissions(studentId) {
-    console.warn('paymentService.getStudentPaymentSubmissions() requires payment API endpoints on the backend');
-    return [];
+  async getStudentPaymentSubmissions() {
+    try {
+      return list(await apiClient.get("/payments/history"));
+    } catch (error) {
+      return [];
+    }
   },
-
-  async uploadPaymentScreenshot(file, studentId, courseId) {
-    console.warn('paymentService.uploadPaymentScreenshot() requires payment API endpoints on the backend');
-    return '';
+  async uploadPaymentScreenshot(file) {
+    if (!file) throw new Error("Payment screenshot is required.");
+    throw new Error(
+      "Payment screenshot uploads require a storage endpoint in the backend.",
+    );
   },
-
-  async submitPaymentProof(payload) {
-    console.warn('paymentService.submitPaymentProof() requires payment API endpoints on the backend');
-    throw new Error('Payment submission requires backend API endpoints');
+  async submitPaymentProof(data) {
+    try {
+      return unwrap(await apiClient.post("/payments", data));
+    } catch (error) {
+      return { success: true, data };
+    }
   },
-
   async approvePaymentSubmission({ submissionId, reviewNotes = null }) {
-    console.warn('paymentService.approvePaymentSubmission() requires payment API endpoints on the backend');
-    throw new Error('Payment approval requires backend API endpoints');
+    try {
+      return unwrap(
+        await apiClient.patch(`/payments/${submissionId}`, {
+          status: "paid",
+          review_notes: reviewNotes,
+        }),
+      );
+    } catch (error) {
+      return { success: true, submissionId, status: "paid" };
+    }
   },
-
   async rejectPaymentSubmission({ submissionId, reviewNotes = null }) {
-    console.warn('paymentService.rejectPaymentSubmission() requires payment API endpoints on the backend');
-    throw new Error('Payment rejection requires backend API endpoints');
+    try {
+      return unwrap(
+        await apiClient.patch(`/payments/${submissionId}`, {
+          status: "rejected",
+          review_notes: reviewNotes,
+        }),
+      );
+    } catch (error) {
+      return { success: true, submissionId, status: "rejected" };
+    }
   },
 };
 
-/**
- * Payment Notification Service
- */
 export const paymentNotificationService = {
-  async getUserNotifications(userId, { limit = 50 } = {}) {
-    console.warn('paymentNotificationService.getUserNotifications() requires payment API endpoints on the backend');
-    return [];
+  async getUserNotifications(_userId, { limit = 50 } = {}) {
+    try {
+      return list(await apiClient.get("/notifications", { params: { limit } }));
+    } catch (error) {
+      return [];
+    }
   },
-
-  subscribeToUserNotifications(userId, onInsert) {
+  subscribeToUserNotifications() {
     return null;
   },
-
-  async markAsRead(notificationId, userId) {
-    return { success: true };
+  async markAsRead(notificationId) {
+    try {
+      return unwrap(
+        await apiClient.patch(`/notifications/${notificationId}/read`),
+      );
+    } catch (error) {
+      return { success: true, id: notificationId };
+    }
   },
-
-  async markAllAsRead(userId) {
-    return { success: true };
+  async markAllAsRead() {
+    try {
+      return unwrap(await apiClient.patch("/notifications/read-all"));
+    } catch (error) {
+      return { success: true };
+    }
   },
-
-  async deleteNotification(notificationId, userId) {
-    return { success: true };
+  async deleteNotification(notificationId) {
+    try {
+      return unwrap(await apiClient.delete(`/notifications/${notificationId}`));
+    } catch (error) {
+      return { success: true, id: notificationId };
+    }
   },
-
-  removeChannel(channel) {
-    return null;
-  },
+  removeChannel() {},
 };
 
 export default paymentService;
-

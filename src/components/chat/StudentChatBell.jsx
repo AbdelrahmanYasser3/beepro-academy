@@ -15,6 +15,7 @@ import {
 } from "../../services/api";
 import { paymentService } from "../../services/paymentAPI";
 import { useTranslation } from "react-i18next";
+import "./chat.css";
 
 const isChatNotification = (notification) =>
   notification?.action_url?.includes("tab=chat") ||
@@ -169,18 +170,7 @@ const StudentChatBell = () => {
 
       {/* Dropdown */}
       {open && (
-        <div
-          className="dropdown-menu d-block shadow border rounded-3 p-0 mt-2"
-          style={{
-            width: "100%",
-            minWidth: "320px",
-            maxWidth: "420px",
-            right: 0,
-            left: "auto",
-            position: "absolute",
-            zIndex: 1055,
-          }}
-        >
+        <div className="dropdown-menu d-block shadow border rounded-3 p-0 mt-2 student-chat-bell__dropdown">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center border-bottom p-3">
             <h6 className="mb-0">{t("dashboardExtra.instructorChat")}</h6>

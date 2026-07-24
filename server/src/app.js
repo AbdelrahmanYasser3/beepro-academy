@@ -55,6 +55,7 @@ function createApp(container) {
     container.courseController,
     authenticate,
     authorize,
+    container.lessonController,
   );
   app.use("/api/v1/courses", courseRoutes);
 
@@ -81,6 +82,91 @@ function createApp(container) {
     authorize,
   );
   app.use("/api/v1/enrollments", enrollmentRoutes);
+  app.get(
+    "/api/v1/users/me/courses",
+    authenticate,
+    container.enrollmentController.getUserEnrollments,
+  );
+
+  const createMeetingRoutes = require("./interfaces/http/routes/meetingRoutes");
+  const meetingRoutes = createMeetingRoutes(
+    container.meetingController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/meetings", meetingRoutes);
+
+  const createChatRoutes = require("./interfaces/http/routes/chatRoutes");
+  const chatRoutes = createChatRoutes(
+    container.chatController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/chat", chatRoutes);
+
+  const createNotificationRoutes = require("./interfaces/http/routes/notificationRoutes");
+  const notificationRoutes = createNotificationRoutes(
+    container.notificationController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/notifications", notificationRoutes);
+
+  const createDashboardRoutes = require("./interfaces/http/routes/dashboardRoutes");
+  const dashboardRoutes = createDashboardRoutes(
+    container.dashboardController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/dashboard", dashboardRoutes);
+
+  const createAnalyticsRoutes = require("./interfaces/http/routes/analyticsRoutes");
+  const analyticsRoutes = createAnalyticsRoutes(
+    container.analyticsController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/analytics", analyticsRoutes);
+
+  const createReportRoutes = require("./interfaces/http/routes/reportRoutes");
+  const reportRoutes = createReportRoutes(
+    container.reportController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/reports", reportRoutes);
+
+  const createPaymentRoutes = require("./interfaces/http/routes/paymentRoutes");
+  const paymentRoutes = createPaymentRoutes(
+    container.paymentController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/payments", paymentRoutes);
+
+  const createCertificateRoutes = require("./interfaces/http/routes/certificateRoutes");
+  const certificateRoutes = createCertificateRoutes(
+    container.certificateController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/certificates", certificateRoutes);
+
+  const createProfileRoutes = require("./interfaces/http/routes/profileRoutes");
+  const profileRoutes = createProfileRoutes(
+    container.profileController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/profile", profileRoutes);
+
+  const createSettingsRoutes = require("./interfaces/http/routes/settingsRoutes");
+  const settingsRoutes = createSettingsRoutes(
+    container.settingsController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/settings", settingsRoutes);
 
   // Health check
   app.get("/health", (req, res) => {
@@ -89,6 +175,7 @@ function createApp(container) {
 
   // Global Error Handler (must be last)
   app.use(errorHandler);
-
+  return app;
+}
 
 module.exports = createApp;
