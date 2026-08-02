@@ -85,7 +85,7 @@
     "noResults": "No results found",
     "clearFilters": "Clear Filters",
     "tryChangingYourSearchOrFilterC": "Try changing your search or filter criteria",
-    "showingFilteredcourseslengthOf": "Showing ${filteredCourses.length} of ${courses.length} courses",
+    "showingFilteredcourseslengthOf": "Showing courses",
     "clearAll": "Clear All",
     "level": "Level",
     "all": "All",

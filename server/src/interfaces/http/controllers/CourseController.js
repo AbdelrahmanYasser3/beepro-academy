@@ -15,11 +15,12 @@ class CourseController {
 
   list = async (req, res, next) => {
     try {
-      const { category, level, search, limit, offset } = req.query;
+      const { category, level, search, instructor_id, limit, offset } = req.query;
       const result = await this.listUseCase.execute({
         category,
         level,
         search,
+        instructorId: instructor_id,
         limit: limit ? Number(limit) : undefined,
         offset: offset ? Number(offset) : undefined,
       });

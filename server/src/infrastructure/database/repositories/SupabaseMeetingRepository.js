@@ -1,3 +1,5 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseMeetingRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
@@ -11,9 +13,7 @@ class SupabaseMeetingRepository {
     limit = 20,
     offset = 0,
   } = {}) {
-    if (!this.supabase) {
-      return { items: [], pagination: { total: 0, limit, offset } };
-    }
+    requireSupabase(this.supabase);
 
     let query = this.supabase.from("meetings").select("*", { count: "exact" });
     if (userId)
@@ -35,7 +35,7 @@ class SupabaseMeetingRepository {
   }
 
   async getById(id) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("meetings")
       .select("*")
@@ -46,7 +46,7 @@ class SupabaseMeetingRepository {
   }
 
   async create(payload) {
-    if (!this.supabase) return { id: `mock-${Date.now()}`, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("meetings")
       .insert(payload)
@@ -57,7 +57,7 @@ class SupabaseMeetingRepository {
   }
 
   async update(id, payload) {
-    if (!this.supabase) return { id, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("meetings")
       .update(payload)
@@ -69,7 +69,7 @@ class SupabaseMeetingRepository {
   }
 
   async delete(id) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase
       .from("meetings")
       .delete()

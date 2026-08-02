@@ -1,11 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseEnrollmentRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async enrollStudentIfEligible(courseId, userId) {
-    if (!this.supabase)
-      return { success: true, enrollment_id: `mock-${Date.now()}` };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase.rpc(
       "enroll_student_if_eligible",
       { p_course_id: courseId },
@@ -15,7 +16,7 @@ class SupabaseEnrollmentRepository {
   }
 
   async getUserEnrollments(userId) {
-    if (!this.supabase) return [];
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("enrollments")
       .select(
@@ -28,7 +29,7 @@ class SupabaseEnrollmentRepository {
   }
 
   async isEnrolled(userId, courseId) {
-    if (!this.supabase) return false;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("enrollments")
       .select("id")
@@ -40,7 +41,7 @@ class SupabaseEnrollmentRepository {
   }
 
   async updateProgress(enrollmentId, progress) {
-    if (!this.supabase) return { id: enrollmentId, progress };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("enrollments")
       .update({ progress })
@@ -52,7 +53,7 @@ class SupabaseEnrollmentRepository {
   }
 
   async delete(id, userId) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase
       .from("enrollments")
       .delete()

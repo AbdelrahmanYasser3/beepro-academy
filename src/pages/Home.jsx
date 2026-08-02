@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { useLanguage } from '../contexts/LanguageContext'
-import CourseCard from '../components/ui/CourseCard'
-import Button from '../components/ui/Button'
-import { categories, stats, testimonials } from '../data/courses'
-import { courseService } from '../services/api'
-import { 
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "../contexts/LanguageContext";
+import CourseCard from "../components/ui/CourseCard";
+import Button from "../components/ui/Button";
+import { courseService } from "../services/api";
+import {
+  formatCourseForCard,
+  getCategoryMeta,
+  isCoursePublishedAndApproved,
+} from "../lib/backendFormatters";
+import {
   FiBarChart2,
-  FiServer, 
+  FiServer,
   FiTrendingUp,
   FiAward,
   FiHeadphones,
@@ -19,86 +23,114 @@ import {
   FiPlay,
   FiStar,
   FiUsers,
-  FiBookOpen
-} from 'react-icons/fi'
+  FiBookOpen,
+} from "react-icons/fi";
 
 const Home = () => {
-  const { t } = useTranslation()
-  const { language, isRTL } = useLanguage()
-  const isArabic = language === 'ar'
-  const [popularCourses, setPopularCourses] = useState([])
-  
-  const ArrowIcon = isRTL ? FiArrowLeft : FiArrowRight
+  const { t } = useTranslation();
+  const { language, isRTL } = useLanguage();
+  const isArabic = language === "ar";
+  const [popularCourses, setPopularCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [isLoadingHomeData, setIsLoadingHomeData] = useState(true);
+
+  const ArrowIcon = isRTL ? FiArrowLeft : FiArrowRight;
 
   useEffect(() => {
     const loadPopularCourses = async () => {
+      setIsLoadingHomeData(true);
       try {
-        const data = await courseService.getFeaturedCourses(4)
-        const formatted = (data || [])
-          .filter((course) => course.is_published !== false)
+        const result = await courseService.getCourses({ limit: 1000 });
+        const formatted = (result.data || [])
+          .filter((course) => isCoursePublishedAndApproved(course))
           .map((course) => ({
-            id: course.id,
-            title: course.title,
-            titleEn: course.title_en || course.title,
-            description: course.description,
-            descriptionEn: course.description_en || course.description,
-            thumbnail: course.thumbnail_url || course.image_url || '/assets/hero-background.png',
-            price: course.price || 0,
-            category: course.category,
-            level: course.level || 'beginner',
-            rating: course.rating || 0,
-            students: course.students || 0,
-            lessons: course.lessons_count || course.lessonsCount || 0,
-            duration: course.duration || 0,
-            instructor: {
-              name: course.instructor?.full_name || 'Instructor',
-              nameEn: course.instructor?.full_name || 'Instructor',
-              avatar: course.instructor?.avatar_url || '/assets/abdullah1.jpg',
-            },
+            ...formatCourseForCard(course),
             isPopular: true,
-          }))
-        setPopularCourses(formatted)
+          }));
+        setAllCourses(formatted);
+        setPopularCourses(formatted.slice(0, 4));
       } catch (error) {
-        console.error('Error loading featured courses:', error)
-        setPopularCourses([])
+        console.error("Error loading featured courses:", error);
+        setAllCourses([]);
+        setPopularCourses([]);
+      } finally {
+        setIsLoadingHomeData(false);
       }
-    }
+    };
 
-    loadPopularCourses()
-  }, [])
+    loadPopularCourses();
+  }, []);
 
   const categoryIcons = {
     financial_markets: FiTrendingUp,
     data_analysis: FiBarChart2,
     it: FiServer,
-  }
+  };
+
+  const categoryColors = {
+    financial_markets: "from-blue-500 to-indigo-600",
+    data_analysis: "from-emerald-500 to-teal-600",
+    it: "from-amber-500 to-orange-500",
+  };
+
+  const categories = useMemo(() => {
+    const counts = allCourses.reduce((acc, course) => {
+      if (!course.category) return acc;
+      acc[course.category] = (acc[course.category] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts).map(([id, coursesCount]) => ({
+      ...getCategoryMeta(id),
+      coursesCount,
+      color: categoryColors[id] || "from-primary-500 to-primary-700",
+    }));
+  }, [allCourses]);
+
+  const stats = useMemo(
+    () => ({
+      students: allCourses.reduce(
+        (sum, course) => sum + Number(course.students || 0),
+        0,
+      ),
+      courses: allCourses.length,
+      instructors: new Set(
+        allCourses.map((course) => course.instructor?.name).filter(Boolean),
+      ).size,
+      hours: allCourses.reduce(
+        (sum, course) => sum + Number(course.duration || 0),
+        0,
+      ),
+    }),
+    [allCourses],
+  );
 
   const features = [
     {
       icon: FiCheckCircle,
-      title: t('home.features.quality.title'),
-      description: t('home.features.quality.description'),
-      color: 'from-blue-500 to-indigo-600'
+      title: t("home.features.quality.title"),
+      description: t("home.features.quality.description"),
+      color: "from-blue-500 to-indigo-600",
     },
     {
       icon: FiAward,
-      title: t('home.features.certificate.title'),
-      description: t('home.features.certificate.description'),
-      color: 'from-yellow-500 to-orange-600'
+      title: t("home.features.certificate.title"),
+      description: t("home.features.certificate.description"),
+      color: "from-yellow-500 to-orange-600",
     },
     {
       icon: FiHeadphones,
-      title: t('home.features.support.title'),
-      description: t('home.features.support.description'),
-      color: 'from-green-500 to-teal-600'
+      title: t("home.features.support.title"),
+      description: t("home.features.support.description"),
+      color: "from-green-500 to-teal-600",
     },
     {
       icon: FiClock,
-      title: t('home.features.flexible.title'),
-      description: t('home.features.flexible.description'),
-      color: 'from-purple-500 to-pink-600'
-    }
-  ]
+      title: t("home.features.flexible.title"),
+      description: t("home.features.flexible.description"),
+      color: "from-purple-500 to-pink-600",
+    },
+  ];
 
   return (
     <div className="min-h-screen">
@@ -108,7 +140,10 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-primary-700/10 dark:from-primary-900/20 dark:to-primary-700/10" />
         <div className="absolute inset-0">
           <div className="absolute top-20 start-10 w-48 h-48 sm:w-72 sm:h-72 bg-primary-500/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-20 end-10 w-64 h-64 sm:w-96 sm:h-96 bg-primary-700/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+          <div
+            className="absolute bottom-20 end-10 w-64 h-64 sm:w-96 sm:h-96 bg-primary-700/20 rounded-full blur-3xl animate-float"
+            style={{ animationDelay: "1s" }}
+          />
         </div>
 
         <div className="container-custom relative z-10">
@@ -116,17 +151,22 @@ const Home = () => {
             {/* Content */}
             <div className="text-center lg:text-start">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                <span className="gradient-text">{t('home.hero.title')}</span>
+                <span className="gradient-text">{t("home.hero.title")}</span>
               </h1>
               <p className="text-lg md:text-xl text-secondary-600 dark:text-secondary-400 mb-8 leading-relaxed">
-                {t('home.hero.subtitle')}
+                {t("home.hero.subtitle")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button to="/courses" size="lg" icon={ArrowIcon} iconPosition="end">
-                  {t('home.hero.cta')}
+                <Button
+                  to="/courses"
+                  size="lg"
+                  icon={ArrowIcon}
+                  iconPosition="end"
+                >
+                  {t("home.hero.cta")}
                 </Button>
                 <Button to="/courses" variant="outline" size="lg" icon={FiPlay}>
-                  {t('home.hero.exploreCourses')}
+                  {t("home.hero.exploreCourses")}
                 </Button>
               </div>
 
@@ -136,25 +176,33 @@ const Home = () => {
                   <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">
                     {stats.students.toLocaleString()}+
                   </div>
-                  <div className="text-sm text-secondary-500">{t('home.stats.students')}</div>
+                  <div className="text-sm text-secondary-500">
+                    {t("home.stats.students")}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">
                     {stats.courses}+
                   </div>
-                  <div className="text-sm text-secondary-500">{t('home.stats.courses')}</div>
+                  <div className="text-sm text-secondary-500">
+                    {t("home.stats.courses")}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">
                     {stats.instructors}+
                   </div>
-                  <div className="text-sm text-secondary-500">{t('home.stats.instructors')}</div>
+                  <div className="text-sm text-secondary-500">
+                    {t("home.stats.instructors")}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">
                     {stats.hours.toLocaleString()}+
                   </div>
-                  <div className="text-sm text-secondary-500">{t('home.stats.hours')}</div>
+                  <div className="text-sm text-secondary-500">
+                    {t("home.stats.hours")}
+                  </div>
                 </div>
               </div>
             </div>
@@ -175,19 +223,38 @@ const Home = () => {
                     <FiUsers className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <div className="font-bold">15,000+</div>
-                    <div className="text-sm text-secondary-500">{t('home.stats.students')}</div>
+                    <div className="font-bold">
+                      {stats.students.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-secondary-500">
+                      {t("home.stats.students")}
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="absolute -bottom-4 -end-4 bg-white dark:bg-dark-card p-4 rounded-xl shadow-lg animate-float" style={{ animationDelay: '0.5s' }}>
+              <div
+                className="absolute -bottom-4 -end-4 bg-white dark:bg-dark-card p-4 rounded-xl shadow-lg animate-float"
+                style={{ animationDelay: "0.5s" }}
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
                     <FiStar className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div>
-                    <div className="font-bold">4.9/5</div>
-                    <div className="text-sm text-secondary-500">{t('course.reviews')}</div>
+                    <div className="font-bold">
+                      {popularCourses.length
+                        ? (
+                            popularCourses.reduce(
+                              (sum, course) => sum + Number(course.rating || 0),
+                              0,
+                            ) / popularCourses.length
+                          ).toFixed(1)
+                        : "0.0"}
+                      /5
+                    </div>
+                    <div className="text-sm text-secondary-500">
+                      {t("course.reviews")}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -200,23 +267,29 @@ const Home = () => {
       <section className="section bg-secondary-50 dark:bg-dark-card/50">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('home.features.title')}</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              {t("home.features.title")}
+            </h2>
             <p className="text-lg text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto">
-              {t('home.features.subtitle')}
+              {t("home.features.subtitle")}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <div 
+              <div
                 key={index}
                 className="card card-body text-center hover:-translate-y-2 transition-transform duration-300"
               >
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}>
+                <div
+                  className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center`}
+                >
                   <feature.icon className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-secondary-600 dark:text-secondary-400">{feature.description}</p>
+                <p className="text-secondary-600 dark:text-secondary-400">
+                  {feature.description}
+                </p>
               </div>
             ))}
           </div>
@@ -227,38 +300,45 @@ const Home = () => {
       <section className="section">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('home.categories.title')}</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              {t("home.categories.title")}
+            </h2>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category) => {
-              const Icon = categoryIcons[category.id]
-              return (
-                <Link
-                  key={category.id}
-                  to={`/courses?category=${category.id}`}
-                  className="group relative overflow-hidden rounded-2xl aspect-[4/3]"
-                >
-                  <img
-                    src={category.image}
-                    alt={isArabic ? category.name : category.nameEn}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-end p-6 text-white">
-                    <div className={`w-14 h-14 mb-4 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center`}>
-                      {Icon && <Icon className="w-7 h-7" />}
+            {categories.length > 0 ? (
+              categories.map((category) => {
+                const Icon = categoryIcons[category.id];
+                return (
+                  <Link
+                    key={category.id}
+                    to={`/courses?category=${category.id}`}
+                    className={`group relative overflow-hidden rounded-2xl aspect-[4/3] bg-gradient-to-br ${category.color}`}
+                  >
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-end p-6 text-white">
+                      <div className="w-14 h-14 mb-4 rounded-xl bg-white/20 flex items-center justify-center">
+                        {Icon && <Icon className="w-7 h-7" />}
+                      </div>
+                      <h3 className="text-xl font-bold mb-1">
+                        {isArabic ? category.name : category.nameEn}
+                      </h3>
+                      <p className="text-sm text-white/80">
+                        {category.coursesCount} {t("home.stats.courses")}
+                      </p>
                     </div>
-                    <h3 className="text-xl font-bold mb-1">
-                      {isArabic ? category.name : category.nameEn}
-                    </h3>
-                    <p className="text-sm text-white/80">
-                      {category.coursesCount} {t('home.stats.courses')}
-                    </p>
-                  </div>
-                </Link>
-              )
-            })}
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="col-span-full card card-body text-center py-10">
+                <p className="text-secondary-500">
+                  {isLoadingHomeData
+                    ? "Loading categories..."
+                    : "No course categories available yet."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -268,13 +348,15 @@ const Home = () => {
         <div className="container-custom">
           <div className="flex items-center justify-between mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">{t('home.popular.title')}</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                {t("home.popular.title")}
+              </h2>
             </div>
-            <Link 
-              to="/courses" 
+            <Link
+              to="/courses"
               className="hidden md:flex items-center gap-2 text-primary-500 hover:text-primary-600 font-medium"
             >
-              {t('home.popular.viewAll')}
+              {t("home.popular.viewAll")}
               <ArrowIcon className="w-5 h-5" />
             </Link>
           </div>
@@ -287,15 +369,22 @@ const Home = () => {
             ) : (
               <div className="col-span-full card card-body text-center py-10">
                 <p className="text-secondary-500">
-                  {t('home.noPublishedCoursesYet')}
+                  {isLoadingHomeData
+                    ? "Loading courses..."
+                    : "No published courses yet."}
                 </p>
               </div>
             )}
           </div>
 
           <div className="mt-8 text-center md:hidden">
-            <Button to="/courses" variant="outline" icon={ArrowIcon} iconPosition="end">
-              {t('home.popular.viewAll')}
+            <Button
+              to="/courses"
+              variant="outline"
+              icon={ArrowIcon}
+              iconPosition="end"
+            >
+              {t("home.popular.viewAll")}
             </Button>
           </div>
         </div>
@@ -306,39 +395,17 @@ const Home = () => {
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              {t('home.whatOurStudentsSay')}
+              {t("home.whatOurStudentsSay")}
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="card card-body">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <FiStar 
-                      key={i} 
-                      className={`w-5 h-5 ${i < testimonial.rating ? 'text-yellow-500 fill-current' : 'text-secondary-300'}`} 
-                    />
-                  ))}
-                </div>
-                <p className="text-secondary-600 dark:text-secondary-400 mb-6 leading-relaxed">
-                  "{isArabic ? testimonial.content : testimonial.contentEn}"
-                </p>
-                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-secondary-100 dark:border-dark-border">
-                  <img
-                    src={testimonial.avatar}
-                    alt={isArabic ? testimonial.name : testimonial.nameEn}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <div className="font-bold">{isArabic ? testimonial.name : testimonial.nameEn}</div>
-                    <div className="text-sm text-secondary-500">
-                      {isArabic ? testimonial.role : testimonial.roleEn}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <div className="md:col-span-3 card card-body text-center py-10">
+              <FiStar className="w-10 h-10 mx-auto mb-3 text-secondary-300" />
+              <p className="text-secondary-500">
+                No testimonials available from the backend yet.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -347,33 +414,33 @@ const Home = () => {
       <section className="section bg-gradient-to-br from-primary-500 to-primary-700 text-white">
         <div className="container-custom text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            {t('home.startYourLearningJourneyToday')}
+            {t("home.startYourLearningJourneyToday")}
           </h2>
           <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-            {t('home.joinThousandsOfStudentsWhoHave')}
+            {t("home.joinThousandsOfStudentsWhoHave")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              to="/register" 
-              variant="secondary" 
-              size="lg" 
+            <Button
+              to="/register"
+              variant="secondary"
+              size="lg"
               className="bg-white text-primary-600 hover:bg-secondary-100"
             >
-              {t('nav.register')}
+              {t("nav.register")}
             </Button>
-            <Button 
-              to="/courses" 
-              variant="outline" 
-              size="lg" 
+            <Button
+              to="/courses"
+              variant="outline"
+              size="lg"
               className="border-white text-white hover:bg-white hover:text-primary-600"
             >
-              {t('home.hero.exploreCourses')}
+              {t("home.hero.exploreCourses")}
             </Button>
           </div>
         </div>
       </section>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

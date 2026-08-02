@@ -1,12 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseReportRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async list({ userId, search, limit = 20, offset = 0 } = {}) {
-    if (!this.supabase) {
-      return { items: [], pagination: { total: 0, limit, offset } };
-    }
+    requireSupabase(this.supabase);
 
     let query = this.supabase.from("reports").select("*", { count: "exact" });
     if (userId) query = query.eq("user_id", userId);
@@ -25,7 +25,7 @@ class SupabaseReportRepository {
   }
 
   async getById(id, userId) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("reports")
       .select("*")
@@ -37,13 +37,7 @@ class SupabaseReportRepository {
   }
 
   async exportReport(userId, payload) {
-    if (!this.supabase)
-      return {
-        id: `mock-${Date.now()}`,
-        ...payload,
-        user_id: userId,
-        status: "generated",
-      };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("reports")
       .insert({ ...payload, user_id: userId, status: "generated" })

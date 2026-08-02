@@ -1,12 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabasePaymentRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async list({ userId, limit = 20, offset = 0 } = {}) {
-    if (!this.supabase) {
-      return { items: [], pagination: { total: 0, limit, offset } };
-    }
+    requireSupabase(this.supabase);
 
     let query = this.supabase.from("payments").select("*", { count: "exact" });
     if (userId) query = query.eq("user_id", userId);
@@ -23,7 +23,7 @@ class SupabasePaymentRepository {
   }
 
   async getById(id, userId) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("payments")
       .select("*")
@@ -35,8 +35,7 @@ class SupabasePaymentRepository {
   }
 
   async getHistory(userId) {
-    if (!this.supabase)
-      return { items: [], pagination: { total: 0, limit: 20, offset: 0 } };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("payments")
       .select("*")
@@ -50,7 +49,7 @@ class SupabasePaymentRepository {
   }
 
   async create(payload) {
-    if (!this.supabase) return { id: `mock-${Date.now()}`, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("payments")
       .insert(payload)
@@ -61,7 +60,7 @@ class SupabasePaymentRepository {
   }
 
   async update(id, userId, payload) {
-    if (!this.supabase) return { id, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("payments")
       .update(payload)

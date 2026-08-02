@@ -1,12 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseCertificateRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async list({ userId, limit = 20, offset = 0 } = {}) {
-    if (!this.supabase) {
-      return { items: [], pagination: { total: 0, limit, offset } };
-    }
+    requireSupabase(this.supabase);
 
     let query = this.supabase
       .from("certificates")
@@ -25,7 +25,7 @@ class SupabaseCertificateRepository {
   }
 
   async getById(id, userId) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("certificates")
       .select("*")
@@ -37,13 +37,7 @@ class SupabaseCertificateRepository {
   }
 
   async generate(userId, payload) {
-    if (!this.supabase)
-      return {
-        id: `mock-${Date.now()}`,
-        user_id: userId,
-        ...payload,
-        status: "issued",
-      };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("certificates")
       .insert({ ...payload, user_id: userId, status: "issued" })

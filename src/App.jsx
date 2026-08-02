@@ -3,10 +3,13 @@ import { useAuth } from "./contexts/AuthContext";
 import SiteNavbar from "./components/layout/SiteNavbar";
 import Footer from "./components/layout/Footer";
 import {
+  NotFoundPage,
   TeacherCoursesPlaceholder,
   AdminPlaceholder,
-  NotFoundPage,
 } from "./components/app/AppPlaceholders";
+import { canAccessTeacherFeatures, isAdmin } from "./lib/roles";
+import UserManagement from "./pages/admin/UserManagement";
+import AdminCRM from "./pages/admin/AdminCRM";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -14,7 +17,6 @@ import Home from "./pages/Home";
 import Courses from "./pages/Courses";
 import Blogs from "./pages/Blogs";
 import CourseDetailsDB from "./pages/CourseDetailsDB";
-import Dashboard from "./pages/Dashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -31,6 +33,7 @@ import PaymentCheckout from "./pages/PaymentCheckout";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import CourseLearn from "./pages/CourseLearn";
+import LessonDetails from "./components/course/LessonDetails";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import { getLandingAuthUrl } from "./lib/authRoutes";
@@ -38,6 +41,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import CreateCourse from "./pages/teacher/CreateCourse";
 import EditCourse from "./pages/teacher/EditCourse";
+import TeacherCourseBuilder from "./pages/teacher/TeacherCourseBuilder";
 import TeacherLiveSession from "./pages/teacher/TeacherLiveSession";
 import BlogAdmin from "./pages/admin/BlogAdmin";
 import { requireAdmin, requireInstructor } from "./lib/authGuards";
@@ -47,11 +51,41 @@ import ITPage from "./pages/categories/ITPage";
 import DataAnalysisPage from "./pages/categories/DataAnalysisPage";
 import FinancialMarketsPage from "./pages/categories/FinancialMarketsPage";
 
+const DISABLE_AUTH = false;
+
 const LoginRedirect = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   params.set("auth", "login");
   return <Navigate to={`/?${params.toString()}`} replace />;
+};
+
+const RoleDashboardRedirect = () => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    const redirect = `${location.pathname}${location.search}`;
+    return <Navigate to={getLandingAuthUrl("login", { redirect })} replace />;
+  }
+
+  if (isAdmin(user.role)) {
+    return <Navigate to="/admin-dashboard" replace />;
+  }
+
+  if (canAccessTeacherFeatures(user.role)) {
+    return <Navigate to="/teacher-dashboard" replace />;
+  }
+
+  return <Navigate to="/student-dashboard" replace />;
 };
 
 // Protected Route Component
@@ -312,7 +346,7 @@ function App() {
         element={
           <ProtectedRoute>
             <Layout>
-              <Dashboard />
+              <RoleDashboardRedirect />
             </Layout>
           </ProtectedRoute>
         }
@@ -332,22 +366,22 @@ function App() {
       <Route
         path="/teacher-dashboard"
         element={
-          <ProtectedRoute>
+          <TeacherRoute>
             <Layout>
               <TeacherDashboard />
             </Layout>
-          </ProtectedRoute>
+          </TeacherRoute>
         }
       />
 
       <Route
         path="/admin-dashboard"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <Layout>
               <AdminDashboard />
             </Layout>
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
 
@@ -472,6 +506,17 @@ function App() {
         }
       />
 
+      <Route
+        path="/courses/:courseId/lessons/:lessonId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <LessonDetails />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
       {/* Teacher Routes */}
       <Route
         path="/teacher/create-course"
@@ -479,6 +524,17 @@ function App() {
           <TeacherRoute>
             <Layout showFooter={false}>
               <CreateCourse />
+            </Layout>
+          </TeacherRoute>
+        }
+      />
+
+      <Route
+        path="/teacher/courses/:courseId"
+        element={
+          <TeacherRoute>
+            <Layout showFooter={false}>
+              <TeacherCourseBuilder />
             </Layout>
           </TeacherRoute>
         }

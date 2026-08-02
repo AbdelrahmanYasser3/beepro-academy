@@ -1,10 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseLessonRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async listByCourse(courseId) {
-    if (!this.supabase) return [];
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("lessons")
       .select("*")
@@ -15,7 +17,7 @@ class SupabaseLessonRepository {
   }
 
   async getById(id) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("lessons")
       .select("*")
@@ -26,7 +28,7 @@ class SupabaseLessonRepository {
   }
 
   async create(payload) {
-    if (!this.supabase) return { id: `mock-${Date.now()}`, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("lessons")
       .insert(payload)
@@ -37,7 +39,7 @@ class SupabaseLessonRepository {
   }
 
   async update(id, payload) {
-    if (!this.supabase) return { id, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("lessons")
       .update(payload)
@@ -49,7 +51,7 @@ class SupabaseLessonRepository {
   }
 
   async delete(id) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase.from("lessons").delete().eq("id", id);
     if (error) throw error;
     return { success: true };

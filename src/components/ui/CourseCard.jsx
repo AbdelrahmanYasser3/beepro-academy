@@ -1,61 +1,94 @@
-import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { useLanguage } from '../../contexts/LanguageContext'
-import { useCurrency } from '../../contexts/CurrencyContext'
-import { useAuth } from '../../contexts/AuthContext'
-import { 
-  FiClock, 
-  FiUsers, 
-  FiStar, 
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  FiClock,
+  FiUsers,
+  FiStar,
   FiPlay,
   FiBookOpen,
   FiArrowRight,
-  FiArrowLeft
-} from 'react-icons/fi'
+  FiArrowLeft,
+} from "react-icons/fi";
 
-const CourseCard = ({ course, variant = 'default' }) => {
-  const { t } = useTranslation()
-  const { language, isRTL } = useLanguage()
-  const { formatCoursePrice } = useCurrency()
-  const { user, isAuthenticated } = useAuth()
+const CourseCard = ({ course, variant = "default" }) => {
+  const { t } = useTranslation();
+  const { language, isRTL } = useLanguage();
+  const { formatCoursePrice } = useCurrency();
+  const { user, isAuthenticated } = useAuth();
 
-  const fallbackThumbnail = '/assets/hero-background.png'
-  const thumbnailSrc = course.thumbnail || course.thumbnail_url || course.image || fallbackThumbnail
-  const instructor = typeof course.instructor === 'object' && course.instructor
-    ? course.instructor
-    : {
-        name: course.instructor || course.instructor_name || 'Instructor',
-        nameEn: course.instructor || course.instructor_name || 'Instructor',
-        avatar: course.instructorAvatar || course.instructor_avatar || '/assets/abdullah1.jpg',
-        bio: course.instructor_bio || ''
-      }
-  const isEnrolled = isAuthenticated && user?.enrolledCourses?.includes(course.id)
-  const progress = user?.progress?.[course.id] || 0
-
-  const isArabic = language === 'ar'
-  const title = isArabic ? course.title : (course.titleEn || course.title)
-  const description = isArabic ? course.description : (course.descriptionEn || course.description)
-  const instructorName = isArabic ? instructor.name : (instructor.nameEn || instructor.name)
+  const fallbackThumbnail = "/assets/hero-background.png";
+  const thumbnailSrc =
+    course.thumbnail ||
+    course.thumbnail_url ||
+    course.image ||
+    fallbackThumbnail;
+  const instructor =
+    typeof course.instructor === "object" && course.instructor
+      ? course.instructor
+      : {
+          name: course.instructor || course.instructor_name || "Instructor",
+          nameEn: course.instructor || course.instructor_name || "Instructor",
+          avatar:
+            course.instructorAvatar ||
+            course.instructor_avatar ||
+            "/assets/abdullah1.jpg",
+          bio: course.instructor_bio || "",
+        };
+  const isArabic = language === "ar";
+  const title = isArabic ? course.title : course.titleEn || course.title;
+  const description = isArabic
+    ? course.description
+    : course.descriptionEn || course.description;
+  const instructorName = isArabic
+    ? instructor.name
+    : instructor.nameEn || instructor.name;
+  const categoryName = isArabic
+    ? course.categoryName || course.category
+    : course.categoryNameEn || course.categoryName || course.category;
 
   const getLevelBadge = (level) => {
     const levels = {
-      beginner: { label: t('course.level.beginner'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-      intermediate: { label: t('course.level.intermediate'), color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      advanced: { label: t('course.level.advanced'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    }
-    return levels[level] || levels.beginner
-  }
+      beginner: {
+        label: t("course.level.beginner"),
+        color:
+          "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+      },
+      intermediate: {
+        label: t("course.level.intermediate"),
+        color:
+          "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+      },
+      advanced: {
+        label: t("course.level.advanced"),
+        color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+      },
+    };
+    return levels[level] || levels.beginner;
+  };
 
-  const levelBadge = getLevelBadge(course.level)
-  const ArrowIcon = isRTL ? FiArrowLeft : FiArrowRight
-  const priceDisplay = formatCoursePrice(course.price)
+  const levelBadge = getLevelBadge(course.level);
+  const ArrowIcon = isRTL ? FiArrowLeft : FiArrowRight;
+  const priceDisplay = formatCoursePrice(course.price);
   const originalPriceDisplay = course.originalPrice
     ? formatCoursePrice(course.originalPrice).full
-    : null
+    : null;
+  const progressValue =
+    Number(course.progress ?? user?.progress?.[course.id] ?? 0) || 0;
+  const isEnrolled =
+    isAuthenticated &&
+    (course.isEnrolled ||
+      progressValue > 0 ||
+      user?.enrolledCourses?.includes(course.id));
 
-  if (variant === 'horizontal') {
+  if (variant === "horizontal") {
     return (
-      <Link to={`/courses/${course.id}`} className="card flex flex-col md:flex-row group min-w-0">
+      <Link
+        to={`/courses/${course.id}`}
+        className="card flex flex-col md:flex-row group min-w-0"
+      >
         {/* Thumbnail */}
         <div className="relative w-full md:w-48 lg:w-64 h-48 md:h-auto md:min-h-[12rem] shrink-0 overflow-hidden">
           <img
@@ -63,17 +96,17 @@ const CourseCard = ({ course, variant = 'default' }) => {
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(event) => {
-              event.currentTarget.src = fallbackThumbnail
+              event.currentTarget.src = fallbackThumbnail;
             }}
           />
           {course.isFree && (
             <span className="absolute top-3 start-3 badge bg-green-500 text-white">
-              {t('course.free')}
+              {t("course.free")}
             </span>
           )}
           {course.isBestseller && (
             <span className="absolute top-3 end-3 badge bg-yellow-500 text-white">
-              {t('courseExtra.bestseller')}
+              {t("courseExtra.bestseller")}
             </span>
           )}
         </div>
@@ -81,13 +114,20 @@ const CourseCard = ({ course, variant = 'default' }) => {
         {/* Content */}
         <div className="flex-1 p-4 sm:p-6 flex flex-col min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className={`badge ${levelBadge.color}`}>{levelBadge.label}</span>
+            <span className={`badge ${levelBadge.color}`}>
+              {levelBadge.label}
+            </span>
+            {categoryName && (
+              <span className="badge bg-white/10 text-white/80 border border-white/10">
+                {categoryName}
+              </span>
+            )}
           </div>
-          
+
           <h3 className="text-xl font-bold mb-2 group-hover:text-primary-500 transition-colors line-clamp-2">
             {title}
           </h3>
-          
+
           <p className="text-secondary-600 dark:text-secondary-400 text-sm mb-4 line-clamp-2">
             {description}
           </p>
@@ -95,11 +135,11 @@ const CourseCard = ({ course, variant = 'default' }) => {
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-secondary-500 mb-4">
             <span className="flex items-center gap-1">
               <FiBookOpen className="w-4 h-4" />
-              {course.lessons} {t('course.lessons')}
+              {course.lessons} {t("course.lessons")}
             </span>
             <span className="flex items-center gap-1">
               <FiClock className="w-4 h-4" />
-              {course.duration} {t('course.hours')}
+              {course.duration} {t("course.hours")}
             </span>
             <span className="flex items-center gap-1">
               <FiUsers className="w-4 h-4" />
@@ -111,11 +151,11 @@ const CourseCard = ({ course, variant = 'default' }) => {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <img
-                  src={instructor.avatar || '/assets/abdullah1.jpg'}
+                  src={instructor.avatar || "/assets/abdullah1.jpg"}
                   alt={instructorName}
                   className="w-8 h-8 rounded-full object-cover"
                   onError={(event) => {
-                    event.currentTarget.src = '/assets/abdullah1.jpg'
+                    event.currentTarget.src = "/assets/abdullah1.jpg";
                   }}
                 />
                 <span className="text-sm font-medium">{instructorName}</span>
@@ -126,31 +166,34 @@ const CourseCard = ({ course, variant = 'default' }) => {
                 </p>
               )}
             </div>
-            
+
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-yellow-500">
                 <FiStar className="w-4 h-4 fill-current" />
                 <span className="font-medium">{course.rating}</span>
               </div>
               {course.isFree ? (
-                <span className="text-lg font-bold text-green-500">{t('course.free')}</span>
+                <span className="text-lg font-bold text-green-500">
+                  {t("course.free")}
+                </span>
               ) : (
                 <div className="text-end">
                   <span className="text-lg font-bold text-primary-500">
                     {priceDisplay.full}
                   </span>
-                  {originalPriceDisplay && course.originalPrice > course.price && (
-                    <span className="text-sm text-secondary-400 line-through ms-2">
-                      {originalPriceDisplay}
-                    </span>
-                  )}
+                  {originalPriceDisplay &&
+                    course.originalPrice > course.price && (
+                      <span className="text-sm text-secondary-400 line-through ms-2">
+                        {originalPriceDisplay}
+                      </span>
+                    )}
                 </div>
               )}
             </div>
           </div>
         </div>
       </Link>
-    )
+    );
   }
 
   return (
@@ -165,10 +208,10 @@ const CourseCard = ({ course, variant = 'default' }) => {
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(event) => {
-            event.currentTarget.src = fallbackThumbnail
+            event.currentTarget.src = fallbackThumbnail;
           }}
         />
-        
+
         {/* Overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
@@ -180,12 +223,12 @@ const CourseCard = ({ course, variant = 'default' }) => {
         <div className="absolute top-3 start-3 flex flex-col gap-2">
           {course.isFree && (
             <span className="bg-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
-              {t('course.free')}
+              {t("course.free")}
             </span>
           )}
           {course.isBestseller && (
             <span className="bg-amber-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
-              {t('courseExtra.bestseller')}
+              {t("courseExtra.bestseller")}
             </span>
           )}
         </div>
@@ -197,11 +240,11 @@ const CourseCard = ({ course, variant = 'default' }) => {
         </div>
 
         {/* Progress bar for enrolled courses */}
-        {isEnrolled && progress > 0 && (
+        {isEnrolled && progressValue > 0 && (
           <div className="absolute inset-x-0 bottom-0 h-1.5 bg-gray-700">
             <div
               className="h-full bg-gradient-to-r from-[#009FFD] to-[#00D9FF] transition-all"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${progressValue}%` }}
             />
           </div>
         )}
@@ -211,9 +254,16 @@ const CourseCard = ({ course, variant = 'default' }) => {
       <div className="p-4 md:p-5">
         {/* Level Badge */}
         <div className="mb-3">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-md ${levelBadge.color}`}>
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-md ${levelBadge.color}`}
+          >
             {levelBadge.label}
           </span>
+          {categoryName && (
+            <span className="ms-2 text-xs font-semibold px-2.5 py-1 rounded-md bg-white/10 text-white/80">
+              {categoryName}
+            </span>
+          )}
         </div>
 
         {/* Title */}
@@ -224,11 +274,11 @@ const CourseCard = ({ course, variant = 'default' }) => {
         {/* Instructor */}
         <div className="flex items-center gap-2.5 mb-4">
           <img
-            src={instructor.avatar || '/assets/abdullah1.jpg'}
+            src={instructor.avatar || "/assets/abdullah1.jpg"}
             alt={instructorName}
             className="w-8 h-8 rounded-full object-cover border-2 border-[#2E2E2E]"
             onError={(event) => {
-              event.currentTarget.src = '/assets/abdullah1.jpg'
+              event.currentTarget.src = "/assets/abdullah1.jpg";
             }}
           />
           <span className="text-sm text-gray-400 font-medium">
@@ -245,11 +295,15 @@ const CourseCard = ({ course, variant = 'default' }) => {
         <div className="flex items-center gap-3 md:gap-4 text-xs text-gray-400 mb-4 flex-wrap">
           <span className="flex items-center gap-1.5">
             <FiBookOpen className="w-3.5 h-3.5 text-gray-500" />
-            <span>{course.lessons} {t('course.lessons')}</span>
+            <span>
+              {course.lessons} {t("course.lessons")}
+            </span>
           </span>
           <span className="flex items-center gap-1.5">
             <FiClock className="w-3.5 h-3.5 text-gray-500" />
-            <span>{course.duration} {t('course.hours')}</span>
+            <span>
+              {course.duration} {t("course.hours")}
+            </span>
           </span>
           <span className="flex items-center gap-1.5">
             <FiUsers className="w-3.5 h-3.5 text-gray-500" />
@@ -261,7 +315,9 @@ const CourseCard = ({ course, variant = 'default' }) => {
         <div className="flex items-center justify-between pt-4 border-t border-[#2E2E2E]">
           {/* Price */}
           {course.isFree ? (
-            <span className="text-lg font-bold text-emerald-400">{t('course.free')}</span>
+            <span className="text-lg font-bold text-emerald-400">
+              {t("course.free")}
+            </span>
           ) : (
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-bold text-[#00D9FF]">
@@ -278,19 +334,19 @@ const CourseCard = ({ course, variant = 'default' }) => {
           {/* Action */}
           {isEnrolled ? (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-[#00D9FF]">
-              {t('course.continue')}
+              {t("course.continue")}
               <ArrowIcon className="w-4 h-4" />
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-400 group-hover:text-[#00D9FF] transition-colors duration-300">
-              {t('course.enroll')}
+              {t("course.enroll")}
               <ArrowIcon className="w-4 h-4" />
             </span>
           )}
         </div>
       </div>
     </Link>
-  )
-}
+  );
+};
 
-export default CourseCard
+export default CourseCard;

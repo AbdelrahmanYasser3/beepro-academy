@@ -1,10 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseProfileRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async getById(userId) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("users")
       .select("*")
@@ -15,7 +17,7 @@ class SupabaseProfileRepository {
   }
 
   async update(userId, payload) {
-    if (!this.supabase) return { id: userId, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("users")
       .update(payload)
@@ -27,7 +29,7 @@ class SupabaseProfileRepository {
   }
 
   async updatePassword(userId, data, hashService) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { currentPassword, newPassword } = data;
     const { data: user, error: userError } = await this.supabase
       .from("users")

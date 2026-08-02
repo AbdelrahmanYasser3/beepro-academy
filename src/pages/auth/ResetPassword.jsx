@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import Button from "../../components/ui/Button";
 import {
   FiLock,
+  FiMail,
   FiEye,
   FiEyeOff,
   FiAlertCircle,
@@ -34,6 +35,8 @@ const ResetPassword = () => {
   const [ready, setReady] = useState(true);
   const [checking, setChecking] = useState(false);
   const [formData, setFormData] = useState({
+    email: "",
+    otp: "",
     password: "",
     confirmPassword: "",
   });
@@ -61,6 +64,16 @@ const ResetPassword = () => {
     e.preventDefault();
     setError("");
 
+    if (!formData.email.trim()) {
+      setError(t("resetPassword.enterYourEmail") || "Please enter your email.");
+      return;
+    }
+
+    if (!formData.otp.trim()) {
+      setError(t("resetPassword.enterOtp") || "Please enter the OTP code.");
+      return;
+    }
+
     if (!isPasswordValid) {
       setError(t("resetPassword.passwordDoesNotMeetRequirement"));
       return;
@@ -73,7 +86,11 @@ const ResetPassword = () => {
 
     setIsLoading(true);
     try {
-      const result = await updatePassword(formData.password);
+      const result = await updatePassword({
+        email: formData.email.trim(),
+        otp: formData.otp.trim(),
+        newPassword: formData.password,
+      });
       if (result.success) {
         setSuccess(true);
         window.setTimeout(
@@ -158,6 +175,45 @@ const ResetPassword = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="label">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <FiMail className="absolute top-1/2 -translate-y-1/2 start-4 w-5 h-5 text-secondary-400" />
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="input ps-12"
+                      placeholder="you@example.com"
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="otp" className="label">
+                    OTP Code
+                  </label>
+                  <div className="relative">
+                    <FiLock className="absolute top-1/2 -translate-y-1/2 start-4 w-5 h-5 text-secondary-400" />
+                    <input
+                      type="text"
+                      id="otp"
+                      name="otp"
+                      value={formData.otp}
+                      onChange={handleChange}
+                      className="input ps-12"
+                      placeholder="123456"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="password" className="label">
                     {t("auth.reset.password")}

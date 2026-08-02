@@ -1,17 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseSettingsRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async getByUserId(userId) {
-    if (!this.supabase)
-      return {
-        id: `mock-${userId}`,
-        user_id: userId,
-        notifications_enabled: true,
-        email_notifications: true,
-        dark_mode: false,
-      };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("settings")
       .select("*")
@@ -22,8 +17,7 @@ class SupabaseSettingsRepository {
   }
 
   async update(userId, payload) {
-    if (!this.supabase)
-      return { id: `mock-${userId}`, user_id: userId, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("settings")
       .upsert({ user_id: userId, ...payload })

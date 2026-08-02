@@ -85,7 +85,7 @@
     "noResults": "لا توجد نتائج",
     "clearFilters": "مسح الفلاتر",
     "tryChangingYourSearchOrFilterC": "جرب تغيير معايير البحث أو الفلترة",
-    "showingFilteredcourseslengthOf": "عرض ${filteredCourses.length} دورة من أصل ${courses.length}",
+    "showingFilteredcourseslengthOf": "عرض الدورات",
     "clearAll": "مسح الكل",
     "level": "المستوى",
     "all": "الكل",

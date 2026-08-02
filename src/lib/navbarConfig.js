@@ -12,7 +12,10 @@ export function getNavbarContext(pathname = "", search = "") {
   }
 
   if (pathname.startsWith("/admin")) return "admin";
+  if (pathname.startsWith("/teacher-dashboard")) return "teacher";
   if (pathname.startsWith("/teacher")) return "teacher";
+  if (pathname.startsWith("/admin-dashboard")) return "admin";
+  if (pathname === "/student-dashboard") return "dashboard";
   if (
     [
       "/my-courses",
@@ -24,6 +27,7 @@ export function getNavbarContext(pathname = "", search = "") {
       "/reports",
       "/settings",
       "/profile",
+      "/student-dashboard",
     ].some((path) => pathname === path || pathname.startsWith(`${path}/`))
   ) {
     return "dashboard";
@@ -77,73 +81,38 @@ export function getNavbarLinks(
     { label: t("nav.contact"), href: "/contact", type: "route" },
   ];
 
-  const dashboardLinks = [
-    { label: t("nav.dashboard"), href: "/dashboard", type: "route" },
-    { label: t("nav.courses"), href: "/courses", type: "route" },
+  const studentLinks = [
+    { label: t("nav.dashboard"), href: "/student-dashboard", type: "route" },
     { label: t("navExtra.myCourses"), href: "/my-courses", type: "route" },
-    { label: "Analytics", href: "/course-analytics", type: "route" },
-    { label: "Messages", href: "/messages", type: "route" },
-    { label: "Calendar", href: "/calendar", type: "route" },
-    { label: t("payments") || "Payments", href: "/payments", type: "route" },
-    { label: "Reports", href: "/reports", type: "route" },
+    { label: t("nav.courses"), href: "/courses", type: "route" },
+    { label: "Certificates", href: "/profile", type: "route" },
+    { label: "Assessments", href: "/course-analytics", type: "route" },
+    { label: "Meetings", href: "/calendar", type: "route" },
     { label: t("nav.profile"), href: "/profile", type: "route" },
-    ...(isTeacher
-      ? [
-          {
-            label: t("navExtra.manageCourses"),
-            href: "/dashboard?tab=teacher",
-            type: "route",
-          },
-        ]
-      : []),
-    ...(isAdmin
-      ? [
-          {
-            label: t("navExtra.adminPanel"),
-            href: "/dashboard?tab=admin",
-            type: "route",
-          },
-        ]
-      : []),
   ];
 
   const adminLinks = [
     {
-      label: t("navExtra.adminPanel"),
-      href: "/dashboard?tab=admin",
+      label: t("nav.dashboard"),
+      href: "/admin-dashboard",
       type: "route",
     },
-    { label: t("navExtra.manageBlogs"), href: "/admin/blogs", type: "route" },
-    {
-      label: t("navExtra.users"),
-      href: "/dashboard?tab=admin&sub=users",
-      type: "route",
-    },
-    {
-      label: t("navExtra.payments"),
-      href: "/dashboard?tab=admin&sub=payments",
-      type: "route",
-    },
+    { label: "Users", href: "/admin-dashboard", type: "route" },
+    { label: t("nav.courses"), href: "/courses", type: "route" },
+    { label: "Categories", href: "/settings", type: "route" },
+    { label: t("navExtra.payments"), href: "/payments", type: "route" },
     { label: "Reports", href: "/reports", type: "route" },
     { label: "Settings", href: "/settings", type: "route" },
-    { label: t("nav.courses"), href: "/courses", type: "route" },
   ];
 
   const teacherLinks = [
+    { label: t("nav.dashboard"), href: "/teacher-dashboard", type: "route" },
     { label: t("navExtra.myCourses"), href: "/my-courses", type: "route" },
-    {
-      label: t("navExtra.createCourse"),
-      href: "/teacher/create-course",
-      type: "route",
-    },
-    {
-      label: t("navExtra.liveSession"),
-      href: "/teacher/live-session",
-      type: "route",
-    },
-    { label: "Analytics", href: "/course-analytics", type: "route" },
-    { label: "Messages", href: "/messages", type: "route" },
-    { label: t("nav.dashboard"), href: "/dashboard", type: "route" },
+    { label: "Lessons", href: "/teacher/create-course", type: "route" },
+    { label: "Assessments", href: "/course-analytics", type: "route" },
+    { label: "Meetings", href: "/calendar", type: "route" },
+    { label: "Students", href: "/my-courses", type: "route" },
+    { label: t("nav.profile"), href: "/profile", type: "route" },
   ];
 
   const marketingLinks = [
@@ -168,7 +137,9 @@ export function getNavbarLinks(
     case "landing":
       return landingLinks;
     case "dashboard":
-      return dashboardLinks;
+      if (isAdmin) return adminLinks;
+      if (isTeacher) return teacherLinks;
+      return studentLinks;
     case "admin":
       return adminLinks;
     case "teacher":

@@ -1,10 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseBlogRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async listPublished() {
-    if (!this.supabase) return [];
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("blog_posts")
       .select(
@@ -17,7 +19,7 @@ class SupabaseBlogRepository {
   }
 
   async listAll() {
-    if (!this.supabase) return [];
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("blog_posts")
       .select(
@@ -29,7 +31,7 @@ class SupabaseBlogRepository {
   }
 
   async create(payload) {
-    if (!this.supabase) return { id: `mock-${Date.now()}`, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("blog_posts")
       .insert(payload)
@@ -40,7 +42,7 @@ class SupabaseBlogRepository {
   }
 
   async update(id, payload) {
-    if (!this.supabase) return { id, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("blog_posts")
       .update(payload)
@@ -52,7 +54,7 @@ class SupabaseBlogRepository {
   }
 
   async delete(id) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase
       .from("blog_posts")
       .delete()

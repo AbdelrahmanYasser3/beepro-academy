@@ -31,6 +31,210 @@
     @apply box-border;
   }
 
+  :root {
+    --form-text: #111827;
+    --form-placeholder: #6b7280;
+    --form-bg: #ffffff;
+    --form-border: #d1d5db;
+    --form-focus-border: #0056e6;
+    --form-ring: rgba(0, 86, 230, 0.18);
+    --form-success-border: #16a34a;
+    --form-error-border: #ef4444;
+  }
+
+  .dark {
+    --form-text: #f8fafc;
+    --form-placeholder: #94a3b8;
+    --form-bg: #111827;
+    --form-border: #334155;
+    --form-focus-border: #3b82f6;
+    --form-ring: rgba(59, 130, 246, 0.2);
+    --form-success-border: #34d399;
+    --form-error-border: #f87171;
+  }
+
+  input,
+  textarea,
+  select,
+  .input,
+  .form-input,
+  .form-select,
+  .form-textarea,
+  .bepro-input,
+  .bepro-select,
+  .bepro-textarea {
+    color: var(--form-text);
+    background-color: var(--form-bg);
+    border: 1px solid var(--form-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    box-shadow: none;
+    outline: none;
+    font: inherit;
+  }
+
+  input::placeholder,
+  textarea::placeholder,
+  select::placeholder,
+  .input::placeholder,
+  .form-input::placeholder,
+  .form-select::placeholder,
+  .form-textarea::placeholder,
+  .bepro-input::placeholder,
+  .bepro-textarea::placeholder {
+    color: var(--form-placeholder);
+    opacity: 1;
+  }
+
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder,
+  select::-webkit-input-placeholder,
+  .input::-webkit-input-placeholder,
+  .form-input::-webkit-input-placeholder,
+  .form-select::-webkit-input-placeholder,
+  .form-textarea::-webkit-input-placeholder,
+  .bepro-input::-webkit-input-placeholder,
+  .bepro-textarea::-webkit-input-placeholder {
+    color: var(--form-placeholder);
+    opacity: 1;
+  }
+
+  input::-moz-placeholder,
+  textarea::-moz-placeholder,
+  select::-moz-placeholder,
+  .input::-moz-placeholder,
+  .form-input::-moz-placeholder,
+  .form-select::-moz-placeholder,
+  .form-textarea::-moz-placeholder,
+  .bepro-input::-moz-placeholder,
+  .bepro-textarea::-moz-placeholder {
+    color: var(--form-placeholder);
+    opacity: 1;
+  }
+
+  input:-ms-input-placeholder,
+  textarea:-ms-input-placeholder,
+  select:-ms-input-placeholder,
+  .input:-ms-input-placeholder,
+  .form-input:-ms-input-placeholder,
+  .form-select:-ms-input-placeholder,
+  .form-textarea:-ms-input-placeholder,
+  .bepro-input:-ms-input-placeholder,
+  .bepro-textarea:-ms-input-placeholder {
+    color: var(--form-placeholder);
+    opacity: 1;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus,
+  input[type="search"]:focus,
+  .input:focus,
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus,
+  .bepro-input:focus,
+  .bepro-select:focus,
+  .bepro-textarea:focus {
+    border-color: var(--form-focus-border);
+    box-shadow: 0 0 0 4px var(--form-ring);
+    background-color: var(--form-bg);
+    color: var(--form-text);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--form-focus-border);
+    border-color: var(--form-border);
+    background-color: var(--form-bg);
+  }
+
+  input[type="checkbox"]:focus-visible,
+  input[type="radio"]:focus-visible,
+  input[type="file"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--form-ring);
+    border-color: var(--form-focus-border);
+  }
+
+  input[type="file"] {
+    padding: 0.75rem 1rem;
+    background-color: var(--form-bg);
+    color: var(--form-text);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea,
+  .bepro-input,
+  .bepro-select,
+  .bepro-textarea {
+    @apply w-full rounded-lg border transition-all duration-200;
+    padding: 0.75rem 1rem;
+    border-color: var(--form-border);
+    background-color: var(--form-bg);
+    color: var(--form-text);
+    box-shadow: none;
+    outline: none;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus,
+  .bepro-input:focus,
+  .bepro-select:focus,
+  .bepro-textarea:focus {
+    border-color: var(--form-focus-border);
+    box-shadow: 0 0 0 4px var(--form-ring);
+    background-color: var(--form-bg);
+    color: var(--form-text);
+  }
+
+  .form-label,
+  .bepro-label {
+    @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2;
+  }
+
+  .form-control-error,
+  .bepro-input-error,
+  .bepro-select-error,
+  .bepro-textarea-error {
+    border-color: var(--form-error-border) !important;
+    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.15) !important;
+  }
+
+  .form-control-success,
+  .bepro-input-success,
+  .bepro-select-success,
+  .bepro-textarea-success {
+    border-color: var(--form-success-border) !important;
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15) !important;
+  }
+
+  .form-input-glass,
+  .form-select-glass,
+  .form-textarea-glass {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #f8fafc;
+  }
+
+  .form-input-glass::placeholder,
+  .form-select-glass::placeholder,
+  .form-textarea-glass::placeholder {
+    color: rgba(248, 250, 252, 0.75);
+  }
+
+  .form-input-glass:focus,
+  .form-select-glass:focus,
+  .form-textarea-glass:focus {
+    border-color: var(--form-focus-border);
+    box-shadow: 0 0 0 4px var(--form-ring);
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+  }
+
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
@@ -42,7 +246,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-cairo font-bold;
   }
 
@@ -67,6 +276,7 @@
 
 /* Component Styles */
 @layer components {
+
   /* Buttons */
   .btn {
     @apply px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium transition-all duration-300 cursor-pointer inline-flex items-center justify-center gap-2 text-sm sm:text-base;
@@ -98,15 +308,49 @@
   }
 
   /* Form Elements */
-  .input {
-    @apply w-full px-4 py-3 border border-secondary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 dark:bg-dark-card dark:border-dark-border dark:text-dark-text;
+  .input,
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply w-full px-4 py-3 border rounded-lg transition-all duration-200;
+    border-color: var(--form-border, #d1d5db);
+    background-color: var(--form-bg, #ffffff);
+    color: var(--form-text, #111827) !important;
+    box-shadow: none;
+    outline: none;
   }
 
-  .input-error {
-    @apply border-red-500 focus:ring-red-500;
+  .input::placeholder,
+  .form-input::placeholder,
+  .form-textarea::placeholder,
+  .form-select::placeholder {
+    color: var(--form-placeholder, #6b7280) !important;
+    opacity: 1 !important;
   }
 
-  .label {
+  .input:focus,
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    border-color: var(--form-focus-border, #0056e6) !important;
+    box-shadow: 0 0 0 4px rgba(0, 86, 230, 0.18) !important;
+    background-color: var(--form-bg, #ffffff) !important;
+    color: var(--form-text, #111827) !important;
+  }
+
+  .input-error,
+  .form-control-error {
+    border-color: var(--form-error-border, #ef4444) !important;
+    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.15) !important;
+  }
+
+  .form-control-success {
+    border-color: var(--form-success-border, #16a34a) !important;
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15) !important;
+  }
+
+  .label,
+  .form-label {
     @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2;
   }
 
@@ -146,7 +390,7 @@
     @apply text-primary-500 dark:text-primary-400;
   }
 
-  .nav-links > :nth-child(6) {
+  .nav-links> :nth-child(6) {
     display: none;
   }
 
@@ -163,6 +407,7 @@
 
 /* Utility Classes */
 @layer utilities {
+
   /* RTL Specific */
   .rtl-flip {
     transform: scaleX(-1);
@@ -178,9 +423,12 @@
   }
 
   @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0);
     }
+
     50% {
       transform: translateY(-10px);
     }

@@ -24,6 +24,11 @@ import {
   resolveUserRole,
 } from "../lib/roles";
 import {
+  getModerationStatusMeta,
+  isPendingModerationStatus,
+  normalizeModerationStatus,
+} from "../lib/moderationStatus";
+import {
   FiBook,
   FiAward,
   FiClock,
@@ -49,6 +54,7 @@ import {
   FiMessageCircle,
   FiCalendar,
   FiBarChart2,
+  FiAlertTriangle,
 } from "react-icons/fi";
 
 const Dashboard = () => {
@@ -137,6 +143,84 @@ const Dashboard = () => {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   const ArrowIcon = isRTL ? FiArrowLeft : FiArrowRight;
+
+  const teacherCoursesWithStatus = useMemo(
+    () =>
+      (myCourses || []).map((course) => {
+        const statusValue =
+          course.admin_approval_status === "pending"
+            ? "pending"
+            : course.admin_approval_status === "approved" &&
+                course.status === "published"
+              ? "published"
+              : (course.status ??
+                (course.is_published ? "published" : "draft"));
+        const normalizedStatus = normalizeModerationStatus(statusValue);
+        const statusMeta = getModerationStatusMeta(normalizedStatus);
+        return {
+          ...course,
+          status: statusValue,
+          normalizedStatus,
+          statusMeta,
+        };
+      }),
+    [myCourses],
+  );
+
+  const pendingTeacherCourses = useMemo(
+    () =>
+      teacherCoursesWithStatus.filter((course) =>
+        isPendingModerationStatus(course.normalizedStatus),
+      ),
+    [teacherCoursesWithStatus],
+  );
+
+  const publishedTeacherCourses = useMemo(
+    () =>
+      teacherCoursesWithStatus.filter(
+        (course) => course.normalizedStatus === "published",
+      ),
+    [teacherCoursesWithStatus],
+  );
+
+  const rejectedTeacherCourses = useMemo(
+    () =>
+      teacherCoursesWithStatus.filter(
+        (course) => course.normalizedStatus === "rejected",
+      ),
+    [teacherCoursesWithStatus],
+  );
+
+  const recentTeacherCourses = useMemo(
+    () =>
+      [...teacherCoursesWithStatus]
+        .sort(
+          (a, b) =>
+            new Date(b.created_at || b.createdAt || 0) -
+            new Date(a.created_at || a.createdAt || 0),
+        )
+        .slice(0, 5),
+    [teacherCoursesWithStatus],
+  );
+
+  const recentLessons = useMemo(() => {
+    const lessons = teacherCoursesWithStatus.flatMap((course) =>
+      (Array.isArray(course.lessons) ? course.lessons : [])
+        .map((lesson) => ({
+          ...lesson,
+          courseTitle: course.title || "Course",
+          courseId: course.id,
+          statusValue:
+            lesson.status ?? (course.is_published ? "published" : "pending"),
+          createdAt: lesson.created_at || lesson.createdAt || course.created_at,
+        }))
+        .sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+        ),
+    );
+
+    return lessons.slice(0, 8);
+  }, [teacherCoursesWithStatus]);
 
   const enrolledCourses = useMemo(() => {
     return (studentEnrollments || [])
@@ -1589,11 +1673,11 @@ const Dashboard = () => {
 
                 {teacherSubTab === "courses" && (
                   <>
-                    <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                       <div className="card card-body bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                         <FiBook className="w-10 h-10 mb-3" />
                         <div className="text-3xl font-bold">
-                          {myCourses.length}
+                          {teacherCoursesWithStatus.length}
                         </div>
                         <div className="text-white/80">
                           {isAdmin
@@ -1601,12 +1685,108 @@ const Dashboard = () => {
                             : t("dashboardExtra.myCourses")}
                         </div>
                       </div>
-                      <div className="card card-body bg-gradient-to-br from-green-500 to-teal-600 text-white">
-                        <FiUser className="w-10 h-10 mb-3" />
-                        <div className="text-3xl font-bold">0</div>
-                        <div className="text-white/80">
-                          {t("dashboardExtra.enrolledStudents")}
+                      <div className="card card-body bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
+                        <FiClock className="w-10 h-10 mb-3" />
+                        <div className="text-3xl font-bold">
+                          {pendingTeacherCourses.length}
                         </div>
+                        <div className="text-white/80">Pending Review</div>
+                      </div>
+                      <div className="card card-body bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+                        <FiEye className="w-10 h-10 mb-3" />
+                        <div className="text-3xl font-bold">
+                          {publishedTeacherCourses.length}
+                        </div>
+                        <div className="text-white/80">Published Courses</div>
+                      </div>
+                      <div className="card card-body bg-gradient-to-br from-red-500 to-rose-600 text-white">
+                        <FiAlertTriangle className="w-10 h-10 mb-3" />
+                        <div className="text-3xl font-bold">
+                          {rejectedTeacherCourses.length}
+                        </div>
+                        <div className="text-white/80">Rejected Courses</div>
+                      </div>
+                    </div>
+
+                    <div className="grid xl:grid-cols-2 gap-6 mb-8">
+                      <div className="card card-body">
+                        <h3 className="text-lg font-bold mb-4">
+                          Recent Courses
+                        </h3>
+                        {recentTeacherCourses.length === 0 ? (
+                          <p className="text-secondary-500 text-sm">
+                            No recent courses yet.
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {recentTeacherCourses.map((course) => (
+                              <div
+                                key={course.id}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-secondary-100 dark:border-dark-border p-3"
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-semibold truncate">
+                                    {course.title}
+                                  </p>
+                                  <p className="text-xs text-secondary-500">
+                                    {new Date(
+                                      course.created_at ||
+                                        course.createdAt ||
+                                        Date.now(),
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`px-2 py-1 text-xs rounded-full ${course.statusMeta.className}`}
+                                >
+                                  {course.statusMeta.label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="card card-body">
+                        <h3 className="text-lg font-bold mb-4">
+                          Recent Lessons
+                        </h3>
+                        {recentLessons.length === 0 ? (
+                          <p className="text-secondary-500 text-sm">
+                            No lessons available yet.
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {recentLessons.map((lesson) => {
+                              const lessonMeta = getModerationStatusMeta(
+                                lesson.statusValue,
+                              );
+                              return (
+                                <div
+                                  key={
+                                    lesson.id ||
+                                    `${lesson.courseId}-${lesson.title}`
+                                  }
+                                  className="flex items-center justify-between gap-3 rounded-lg border border-secondary-100 dark:border-dark-border p-3"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="font-semibold truncate">
+                                      {lesson.title || "Lesson"}
+                                    </p>
+                                    <p className="text-xs text-secondary-500 truncate">
+                                      {lesson.courseTitle}
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={`px-2 py-1 text-xs rounded-full ${lessonMeta.className}`}
+                                  >
+                                    {lessonMeta.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1658,18 +1838,21 @@ const Dashboard = () => {
                                     {course.lessonsCount || 0}{" "}
                                     {t("dashboardExtra.lessons")}
                                   </span>
-                                  <span
-                                    className={`flex items-center gap-1 ${course.is_published ? "text-green-500" : "text-orange-500"}`}
-                                  >
-                                    {course.is_published ? (
-                                      <FiEye className="w-4 h-4" />
-                                    ) : (
-                                      <FiEyeOff className="w-4 h-4" />
-                                    )}
-                                    {course.is_published
-                                      ? t("dashboardExtra.published")
-                                      : t("dashboardExtra.draft")}
-                                  </span>
+                                  {(() => {
+                                    const statusMeta = getModerationStatusMeta(
+                                      course.status ??
+                                        (course.is_published
+                                          ? "published"
+                                          : "draft"),
+                                    );
+                                    return (
+                                      <span
+                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${statusMeta.className}`}
+                                      >
+                                        {statusMeta.label}
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -1725,42 +1908,6 @@ const Dashboard = () => {
                           </Link>
                         </div>
                       )}
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="card card-body">
-                      <h3 className="text-lg font-bold mb-4">
-                        {t("dashboardExtra.quickActions")}
-                      </h3>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <Link
-                          to="/teacher/create-course"
-                          className="p-4 border-2 border-dashed border-primary-300 rounded-xl text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-                        >
-                          <FiPlusCircle className="w-8 h-8 mx-auto mb-2 text-primary-500" />
-                          <div className="font-medium">
-                            {t("dashboardExtra.createCourse")}
-                          </div>
-                        </Link>
-                        <Link
-                          to="/teacher/live-session?instant=1"
-                          className="p-4 border-2 border-dashed border-green-300 rounded-xl text-center hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                        >
-                          <FiVideo className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                          <div className="font-medium">
-                            {t("dashboardExtra.liveSession")}
-                          </div>
-                        </Link>
-                        <Link
-                          to="/courses"
-                          className="p-4 border-2 border-dashed border-orange-300 rounded-xl text-center hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-                        >
-                          <FiBook className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-                          <div className="font-medium">
-                            {t("dashboardExtra.marketplace")}
-                          </div>
-                        </Link>
-                      </div>
                     </div>
                   </>
                 )}

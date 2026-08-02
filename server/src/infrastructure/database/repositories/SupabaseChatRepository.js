@@ -1,12 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseChatRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async list({ userId, search, limit = 20, offset = 0 } = {}) {
-    if (!this.supabase) {
-      return { items: [], pagination: { total: 0, limit, offset } };
-    }
+    requireSupabase(this.supabase);
 
     let query = this.supabase.from("messages").select("*", { count: "exact" });
     if (userId)
@@ -25,7 +25,7 @@ class SupabaseChatRepository {
   }
 
   async getById(id) {
-    if (!this.supabase) return null;
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("messages")
       .select("*")
@@ -36,7 +36,7 @@ class SupabaseChatRepository {
   }
 
   async create(payload) {
-    if (!this.supabase) return { id: `mock-${Date.now()}`, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("messages")
       .insert(payload)
@@ -47,7 +47,7 @@ class SupabaseChatRepository {
   }
 
   async update(id, userId, payload) {
-    if (!this.supabase) return { id, ...payload };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("messages")
       .update(payload)
@@ -60,7 +60,7 @@ class SupabaseChatRepository {
   }
 
   async delete(id, userId) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase
       .from("messages")
       .delete()

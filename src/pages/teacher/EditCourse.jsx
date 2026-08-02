@@ -1,458 +1,499 @@
-import { useState, useRef, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
-import { courseService, lessonService, meetingService, notificationService } from '../../services/api'
-import { googleCalendarService } from '../../lib/googleCalendar'
-import { generateJitsiRoomName } from '../../lib/jitsi'
-import { isValidGoogleMeetLink, normalizeGoogleMeetLink } from '../../lib/meetLinks'
-import { requireOwner } from '../../lib/authGuards'
-import './CreateCourse.css'
+import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  courseService,
+  lessonService,
+  meetingService,
+  notificationService,
+} from "../../services/api";
+import { googleCalendarService } from "../../lib/googleCalendar";
+import { generateJitsiRoomName } from "../../lib/jitsi";
+import {
+  isValidGoogleMeetLink,
+  normalizeGoogleMeetLink,
+} from "../../lib/meetLinks";
+import { requireOwner } from "../../lib/authGuards";
+import "./CreateCourse.css";
 
 const EditCourse = () => {
-  const { t } = useTranslation()
-  const { id } = useParams()
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const fileInputRef = useRef(null)
-  const videoInputRef = useRef(null)
-  
-  const [step, setStep] = useState(1)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  
+  const { t } = useTranslation();
+  const { id } = useParams();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
   // Course data
   const [courseData, setCourseData] = useState({
-    title: '',
-    description: '',
-    category: 'financial_markets',
-    level: 'beginner',
+    title: "",
+    description: "",
+    category: "financial_markets",
+    level: "beginner",
     price: 0,
-    thumbnail_url: '',
-    language: 'ar',
-    is_published: true,
-    google_meet_link: ''
-  })
-  const [primaryGoogleMeetId, setPrimaryGoogleMeetId] = useState(null)
-  
+    thumbnail_url: "",
+    language: "ar",
+    status: "pending",
+    is_published: false,
+    google_meet_link: "",
+  });
+  const [primaryGoogleMeetId, setPrimaryGoogleMeetId] = useState(null);
+
   // Lessons data
-  const [lessons, setLessons] = useState([])
-  const [deletedLessons, setDeletedLessons] = useState([])
+  const [lessons, setLessons] = useState([]);
+  const [deletedLessons, setDeletedLessons] = useState([]);
   const [currentLesson, setCurrentLesson] = useState({
-    title: '',
-    description: '',
-    video_url: '',
-    content_type: 'video',
+    title: "",
+    description: "",
+    video_url: "",
+    content_type: "video",
     duration: 0,
-    files: []
-  })
-  
+    files: [],
+  });
+
   // Meeting data
-  const [showMeetingModal, setShowMeetingModal] = useState(false)
-  const [meetingPlatform, setMeetingPlatform] = useState('google_meet')
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meetingPlatform, setMeetingPlatform] = useState("google_meet");
   const [meetingData, setMeetingData] = useState({
-    title: '',
-    description: '',
-    scheduled_at: '',
-    duration_minutes: 60
-  })
-  const [scheduledMeetings, setScheduledMeetings] = useState([])
-  const [deletedMeetings, setDeletedMeetings] = useState([])
-  
+    title: "",
+    description: "",
+    scheduled_at: "",
+    duration_minutes: 60,
+  });
+  const [scheduledMeetings, setScheduledMeetings] = useState([]);
+  const [deletedMeetings, setDeletedMeetings] = useState([]);
+
   // File uploads
-  const [uploadProgress, setUploadProgress] = useState({})
-  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const categories = [
-    { value: 'financial_markets', label: 'الأسواق المالية', labelEn: 'Financial Markets' },
-    { value: 'data_analysis', label: 'تحليل البيانات', labelEn: 'Data Analysis' },
-    { value: 'it', label: 'تكنولوجيا المعلومات', labelEn: 'IT' }
-  ]
+    {
+      value: "financial_markets",
+      label: "الأسواق المالية",
+      labelEn: "Financial Markets",
+    },
+    {
+      value: "data_analysis",
+      label: "تحليل البيانات",
+      labelEn: "Data Analysis",
+    },
+    { value: "it", label: "تكنولوجيا المعلومات", labelEn: "IT" },
+  ];
 
   const levels = [
-    { value: 'beginner', label: 'مبتدئ', labelEn: 'Beginner' },
-    { value: 'intermediate', label: 'متوسط', labelEn: 'Intermediate' },
-    { value: 'advanced', label: 'متقدم', labelEn: 'Advanced' }
-  ]
+    { value: "beginner", label: "مبتدئ", labelEn: "Beginner" },
+    { value: "intermediate", label: "متوسط", labelEn: "Intermediate" },
+    { value: "advanced", label: "متقدم", labelEn: "Advanced" },
+  ];
 
   const contentTypes = [
-    { value: 'video', label: '🎬 فيديو', icon: '🎬' },
-    { value: 'document', label: '📝 مستند', icon: '📝' },
-    { value: 'article', label: '📄 مقال', icon: '📄' },
-    { value: 'quiz', label: '❓ اختبار', icon: '❓' },
-    { value: 'assignment', label: '📊 مهمة', icon: '📊' },
-    { value: 'live_session', label: '🎥 بث مباشر', icon: '🎥' }
-  ]
+    { value: "video", label: "🎬 فيديو", icon: "🎬" },
+    { value: "document", label: "📝 مستند", icon: "📝" },
+    { value: "article", label: "📄 مقال", icon: "📄" },
+    { value: "quiz", label: "❓ اختبار", icon: "❓" },
+    { value: "assignment", label: "📊 مهمة", icon: "📊" },
+    { value: "live_session", label: "🎥 بث مباشر", icon: "🎥" },
+  ];
 
   // Load course data on mount
   useEffect(() => {
-    loadCourseData()
-  }, [id])
+    loadCourseData();
+  }, [id]);
 
   const loadCourseData = async () => {
     if (!id) {
-      setError(t('teacherWizard.errCourseIdMissing'))
-      setIsLoading(false)
-      return
+      setError(t("teacherWizard.errCourseIdMissing"));
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
       // Get course details
-      const course = await courseService.getCourseById(id)
-      
+      const course = await courseService.getCourseById(id);
+
       // Check if user is the instructor
       if (!requireOwner(user, course.instructor_id)) {
-        setError(t('teacherWizard.errNoPermission'))
-        setIsLoading(false)
-        return
+        setError(t("teacherWizard.errNoPermission"));
+        setIsLoading(false);
+        return;
       }
 
       // Get meetings
-      const courseMeetings = await meetingService.getMeetingsByCourse(id, { instructorView: true })
+      const courseMeetings = await meetingService.getMeetingsByCourse(id, {
+        instructorView: true,
+      });
       const primaryMeet = (courseMeetings || []).find(
-        (meeting) => meeting.platform === 'google_meet' && meeting.meet_link
-      )
+        (meeting) => meeting.platform === "google_meet" && meeting.meet_link,
+      );
 
       // Set course data
       setCourseData({
-        title: course.title || '',
-        description: course.description || '',
-        category: categories.some((cat) => cat.value === course.category) ? course.category : 'financial_markets',
-        level: course.level || 'beginner',
+        title: course.title || "",
+        description: course.description || "",
+        category: categories.some((cat) => cat.value === course.category)
+          ? course.category
+          : "financial_markets",
+        level: course.level || "beginner",
         price: course.price || 0,
-        thumbnail_url: course.thumbnail_url || '',
-        language: course.language || 'ar',
-        is_published: course.is_published ?? true,
-        google_meet_link: primaryMeet?.meet_link || ''
-      })
-      setPrimaryGoogleMeetId(primaryMeet?.id || null)
+        thumbnail_url: course.thumbnail_url || "",
+        language: course.language || "ar",
+        status:
+          course.status || (course.is_published ? "published" : "pending"),
+        is_published: course.is_published ?? false,
+        google_meet_link: primaryMeet?.meet_link || "",
+      });
+      setPrimaryGoogleMeetId(primaryMeet?.id || null);
 
-      const courseLessons = await lessonService.getLessonsByCourse(id)
-      setLessons(courseLessons.map(lesson => ({
-        ...lesson,
-        isExisting: true,
-        files: lesson.files || []
-      })))
+      const courseLessons = await lessonService.getLessonsByCourse(id);
+      setLessons(
+        courseLessons.map((lesson) => ({
+          ...lesson,
+          isExisting: true,
+          files: lesson.files || [],
+        })),
+      );
 
-      setScheduledMeetings(courseMeetings.map(meeting => ({
-        ...meeting,
-        isExisting: true
-      })))
-
+      setScheduledMeetings(
+        courseMeetings.map((meeting) => ({
+          ...meeting,
+          isExisting: true,
+        })),
+      );
     } catch (err) {
-      console.error('Error loading course:', err)
-      setError(t('teacherWizard.errLoadFailed'))
+      console.error("Error loading course:", err);
+      setError(t("teacherWizard.errLoadFailed"));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Handle course data changes
   const handleCourseChange = (e) => {
-    const { name, value } = e.target
-    setCourseData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setCourseData((prev) => ({ ...prev, [name]: value }));
+  };
 
   // Handle lesson data changes
   const handleLessonChange = (e) => {
-    const { name, value } = e.target
-    setCurrentLesson(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setCurrentLesson((prev) => ({ ...prev, [name]: value }));
+  };
 
   // Handle thumbnail upload
   const handleThumbnailUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const file = e.target.files[0];
+    if (!file) return;
 
-    setUploadProgress(prev => ({ ...prev, thumbnail: 0 }))
-    
+    setUploadProgress((prev) => ({ ...prev, thumbnail: 0 }));
+
     try {
       // Simulate upload progress
       const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          const newProgress = Math.min((prev.thumbnail || 0) + 10, 90)
-          return { ...prev, thumbnail: newProgress }
-        })
-      }, 200)
+        setUploadProgress((prev) => {
+          const newProgress = Math.min((prev.thumbnail || 0) + 10, 90);
+          return { ...prev, thumbnail: newProgress };
+        });
+      }, 200);
 
       // In real implementation, upload to Supabase Storage
-      const url = URL.createObjectURL(file)
-      
-      clearInterval(interval)
-      setUploadProgress(prev => ({ ...prev, thumbnail: 100 }))
-      setCourseData(prev => ({ ...prev, thumbnail_url: url }))
-      
+      const url = URL.createObjectURL(file);
+
+      clearInterval(interval);
+      setUploadProgress((prev) => ({ ...prev, thumbnail: 100 }));
+      setCourseData((prev) => ({ ...prev, thumbnail_url: url }));
+
       setTimeout(() => {
-        setUploadProgress(prev => ({ ...prev, thumbnail: null }))
-      }, 1000)
+        setUploadProgress((prev) => ({ ...prev, thumbnail: null }));
+      }, 1000);
     } catch (err) {
-      setError(t('teacherWizard.errThumbnailFailed'))
-      setUploadProgress(prev => ({ ...prev, thumbnail: null }))
+      setError(t("teacherWizard.errThumbnailFailed"));
+      setUploadProgress((prev) => ({ ...prev, thumbnail: null }));
     }
-  }
+  };
 
   // Handle video upload
   const handleVideoUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const file = e.target.files[0];
+    if (!file) return;
 
-    setUploadProgress(prev => ({ ...prev, video: 0 }))
-    
+    setUploadProgress((prev) => ({ ...prev, video: 0 }));
+
     try {
       // Simulate upload progress
       const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          const newProgress = Math.min((prev.video || 0) + 5, 90)
-          return { ...prev, video: newProgress }
-        })
-      }, 300)
+        setUploadProgress((prev) => {
+          const newProgress = Math.min((prev.video || 0) + 5, 90);
+          return { ...prev, video: newProgress };
+        });
+      }, 300);
 
       // In real implementation, upload to Supabase Storage
-      const url = URL.createObjectURL(file)
-      
+      const url = URL.createObjectURL(file);
+
       // Get video duration
-      const video = document.createElement('video')
-      video.src = url
-      await new Promise(resolve => {
+      const video = document.createElement("video");
+      video.src = url;
+      await new Promise((resolve) => {
         video.onloadedmetadata = () => {
-          setCurrentLesson(prev => ({
+          setCurrentLesson((prev) => ({
             ...prev,
             video_url: url,
-            duration: Math.round(video.duration / 60)
-          }))
-          resolve()
-        }
-      })
-      
-      clearInterval(interval)
-      setUploadProgress(prev => ({ ...prev, video: 100 }))
-      
+            duration: Math.round(video.duration / 60),
+          }));
+          resolve();
+        };
+      });
+
+      clearInterval(interval);
+      setUploadProgress((prev) => ({ ...prev, video: 100 }));
+
       setTimeout(() => {
-        setUploadProgress(prev => ({ ...prev, video: null }))
-      }, 1000)
+        setUploadProgress((prev) => ({ ...prev, video: null }));
+      }, 1000);
     } catch (err) {
-      setError(t('teacherWizard.errVideoFailed'))
-      setUploadProgress(prev => ({ ...prev, video: null }))
+      setError(t("teacherWizard.errVideoFailed"));
+      setUploadProgress((prev) => ({ ...prev, video: null }));
     }
-  }
+  };
 
   // Handle file uploads (PDF, Excel, etc.)
   const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files)
-    if (!files.length) return
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
     for (const file of files) {
-      const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      setUploadProgress(prev => ({ ...prev, [fileId]: 0 }))
-      
+      const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      setUploadProgress((prev) => ({ ...prev, [fileId]: 0 }));
+
       try {
         // Simulate upload progress
         const interval = setInterval(() => {
-          setUploadProgress(prev => {
-            const newProgress = Math.min((prev[fileId] || 0) + 15, 90)
-            return { ...prev, [fileId]: newProgress }
-          })
-        }, 200)
+          setUploadProgress((prev) => {
+            const newProgress = Math.min((prev[fileId] || 0) + 15, 90);
+            return { ...prev, [fileId]: newProgress };
+          });
+        }, 200);
 
         // In real implementation, upload to Supabase Storage
-        const url = URL.createObjectURL(file)
-        
-        clearInterval(interval)
-        setUploadProgress(prev => ({ ...prev, [fileId]: 100 }))
-        
+        const url = URL.createObjectURL(file);
+
+        clearInterval(interval);
+        setUploadProgress((prev) => ({ ...prev, [fileId]: 100 }));
+
         const fileData = {
           id: fileId,
           name: file.name,
           type: file.type,
           size: file.size,
-          url: url
-        }
-        
-        setUploadedFiles(prev => [...prev, fileData])
-        setCurrentLesson(prev => ({
+          url: url,
+        };
+
+        setUploadedFiles((prev) => [...prev, fileData]);
+        setCurrentLesson((prev) => ({
           ...prev,
-          files: [...prev.files, fileData]
-        }))
-        
+          files: [...prev.files, fileData],
+        }));
+
         setTimeout(() => {
-          setUploadProgress(prev => {
-            const newProgress = { ...prev }
-            delete newProgress[fileId]
-            return newProgress
-          })
-        }, 1000)
+          setUploadProgress((prev) => {
+            const newProgress = { ...prev };
+            delete newProgress[fileId];
+            return newProgress;
+          });
+        }, 1000);
       } catch (err) {
-        setError(`فشل رفع الملف: ${file.name}`)
-        setUploadProgress(prev => {
-          const newProgress = { ...prev }
-          delete newProgress[fileId]
-          return newProgress
-        })
+        setError(`فشل رفع الملف: ${file.name}`);
+        setUploadProgress((prev) => {
+          const newProgress = { ...prev };
+          delete newProgress[fileId];
+          return newProgress;
+        });
       }
     }
-  }
+  };
 
   // Remove uploaded file
   const removeFile = (fileId) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
-    setCurrentLesson(prev => ({
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+    setCurrentLesson((prev) => ({
       ...prev,
-      files: prev.files.filter(f => f.id !== fileId)
-    }))
-  }
+      files: prev.files.filter((f) => f.id !== fileId),
+    }));
+  };
 
   // Add lesson to list
   const addLesson = () => {
     if (!currentLesson.title) {
-      setError(t('teacherWizard.errLessonTitle'))
-      return
+      setError(t("teacherWizard.errLessonTitle"));
+      return;
     }
 
-    setLessons(prev => [...prev, { 
-      ...currentLesson, 
-      order_index: prev.length + 1,
-      isNew: true 
-    }])
+    setLessons((prev) => [
+      ...prev,
+      {
+        ...currentLesson,
+        order_index: prev.length + 1,
+        isNew: true,
+      },
+    ]);
     setCurrentLesson({
-      title: '',
-      description: '',
-      video_url: '',
-      content_type: 'video',
+      title: "",
+      description: "",
+      video_url: "",
+      content_type: "video",
       duration: 0,
-      files: []
-    })
-    setUploadedFiles([])
-    setSuccess(t('teacherWizard.successLessonAdded'))
-    setTimeout(() => setSuccess(null), 3000)
-  }
+      files: [],
+    });
+    setUploadedFiles([]);
+    setSuccess(t("teacherWizard.successLessonAdded"));
+    setTimeout(() => setSuccess(null), 3000);
+  };
 
   // Update existing lesson
   const updateLesson = (index) => {
-    const lessonToUpdate = lessons[index]
+    const lessonToUpdate = lessons[index];
     setCurrentLesson({
       ...lessonToUpdate,
-      files: lessonToUpdate.files || []
-    })
-    setUploadedFiles(lessonToUpdate.files || [])
+      files: lessonToUpdate.files || [],
+    });
+    setUploadedFiles(lessonToUpdate.files || []);
     // Remove from list temporarily while editing
-    setLessons(prev => prev.filter((_, i) => i !== index))
-  }
+    setLessons((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Remove lesson
   const removeLesson = (index) => {
-    const lessonToRemove = lessons[index]
+    const lessonToRemove = lessons[index];
     if (lessonToRemove.isExisting && lessonToRemove.id) {
-      setDeletedLessons(prev => [...prev, lessonToRemove.id])
+      setDeletedLessons((prev) => [...prev, lessonToRemove.id]);
     }
-    setLessons(prev => prev.filter((_, i) => i !== index))
-  }
+    setLessons((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const openMeetingModal = (platform) => {
-    setMeetingPlatform(platform)
-    setShowMeetingModal(true)
-  }
+    setMeetingPlatform(platform);
+    setShowMeetingModal(true);
+  };
 
   const createMeetingSession = async () => {
     if (!meetingData.title || !meetingData.scheduled_at) {
-      setError(t('teacherWizard.errMeetingFields'))
-      return
+      setError(t("teacherWizard.errMeetingFields"));
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      let meeting
+      let meeting;
 
-      if (meetingPlatform === 'jitsi') {
-        const jitsiRoomName = generateJitsiRoomName(courseData.title || 'course', meetingData.title)
+      if (meetingPlatform === "jitsi") {
+        const jitsiRoomName = generateJitsiRoomName(
+          courseData.title || "course",
+          meetingData.title,
+        );
         meeting = {
           ...meetingData,
-          platform: 'jitsi',
+          platform: "jitsi",
           jitsi_room_name: jitsiRoomName,
           meet_link: null,
           created_by: user?.id,
           created_at: new Date().toISOString(),
-          isNew: true
-        }
+          isNew: true,
+        };
       } else {
-        const { meetLink, eventId } = await googleCalendarService.createGoogleMeetEvent({
-          title: meetingData.title,
-          description: meetingData.description,
-          scheduledAt: meetingData.scheduled_at,
-          durationMinutes: meetingData.duration_minutes
-        })
+        const { meetLink, eventId } =
+          await googleCalendarService.createGoogleMeetEvent({
+            title: meetingData.title,
+            description: meetingData.description,
+            scheduledAt: meetingData.scheduled_at,
+            durationMinutes: meetingData.duration_minutes,
+          });
 
         meeting = {
           ...meetingData,
-          platform: 'google_meet',
+          platform: "google_meet",
           meet_link: meetLink,
           calendar_event_id: eventId,
           created_by: user?.id,
           created_at: new Date().toISOString(),
-          isNew: true
-        }
+          isNew: true,
+        };
       }
 
-      setScheduledMeetings(prev => [...prev, meeting])
-      setShowMeetingModal(false)
+      setScheduledMeetings((prev) => [...prev, meeting]);
+      setShowMeetingModal(false);
       setMeetingData({
-        title: '',
-        description: '',
-        scheduled_at: '',
-        duration_minutes: 60
-      })
+        title: "",
+        description: "",
+        scheduled_at: "",
+        duration_minutes: 60,
+      });
       setSuccess(
-        meetingPlatform === 'jitsi'
-          ? 'تم إنشاء جلسة Jitsi داخل المنصة بنجاح!'
-          : 'تم إنشاء جلسة Google Meet من Google Calendar بنجاح!'
-      )
+        meetingPlatform === "jitsi"
+          ? "تم إنشاء جلسة Jitsi داخل المنصة بنجاح!"
+          : "تم إنشاء جلسة Google Meet من Google Calendar بنجاح!",
+      );
     } catch (err) {
-      setError(err.message || (meetingPlatform === 'jitsi' ? 'فشل إنشاء جلسة Jitsi' : 'فشل إنشاء جلسة Google Meet'))
+      setError(
+        err.message ||
+          (meetingPlatform === "jitsi"
+            ? "فشل إنشاء جلسة Jitsi"
+            : "فشل إنشاء جلسة Google Meet"),
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Remove meeting
   const removeMeeting = (index) => {
-    const meetingToRemove = scheduledMeetings[index]
+    const meetingToRemove = scheduledMeetings[index];
     if (meetingToRemove.isExisting && meetingToRemove.id) {
-      setDeletedMeetings(prev => [...prev, meetingToRemove.id])
+      setDeletedMeetings((prev) => [...prev, meetingToRemove.id]);
     }
-    setScheduledMeetings(prev => prev.filter((_, i) => i !== index))
-  }
+    setScheduledMeetings((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Copy meet link
   const copyMeetLink = (link) => {
-    navigator.clipboard.writeText(link)
-    setSuccess(t('teacherWizard.successLinkCopied'))
-    setTimeout(() => setSuccess(null), 2000)
-  }
+    navigator.clipboard.writeText(link);
+    setSuccess(t("teacherWizard.successLinkCopied"));
+    setTimeout(() => setSuccess(null), 2000);
+  };
 
   // Submit course updates
   const handleSubmit = async () => {
     if (!courseData.title || !courseData.description) {
-      setError(t('teacherWizard.errRequiredFields'))
-      return
+      setError(t("teacherWizard.errRequiredFields"));
+      return;
     }
 
     if (lessons.length === 0) {
-      setError(t('teacherWizard.errMinOneLesson'))
-      return
+      setError(t("teacherWizard.errMinOneLesson"));
+      return;
     }
 
-    const courseMeetLink = normalizeGoogleMeetLink(courseData.google_meet_link)
-    if (courseData.google_meet_link?.trim() && !isValidGoogleMeetLink(courseMeetLink)) {
-      setError(t('teacherWizard.errInvalidMeetLink'))
-      return
+    const courseMeetLink = normalizeGoogleMeetLink(courseData.google_meet_link);
+    if (
+      courseData.google_meet_link?.trim() &&
+      !isValidGoogleMeetLink(courseMeetLink)
+    ) {
+      setError(t("teacherWizard.errInvalidMeetLink"));
+      return;
     }
 
-    setIsSaving(true)
-    setError(null)
+    setIsSaving(true);
+    setError(null);
 
     try {
       // Update course
@@ -464,120 +505,134 @@ const EditCourse = () => {
         price: courseData.price,
         thumbnail_url: courseData.thumbnail_url,
         language: courseData.language,
-        is_published: courseData.is_published
-      })
+        status: "pending",
+        is_published: false,
+      });
 
       // Delete removed lessons
       for (const lessonId of deletedLessons) {
-        await lessonService.deleteLesson(lessonId)
+        await lessonService.deleteLesson(lessonId);
       }
 
       // Update existing lessons and create new ones
       for (let i = 0; i < lessons.length; i++) {
-        const lesson = lessons[i]
+        const lesson = lessons[i];
         const lessonData = {
           title: lesson.title,
           description: lesson.description,
           video_url: lesson.video_url,
           content_type: lesson.content_type,
           duration: lesson.duration,
-          order_index: i + 1
-        }
+          order_index: i + 1,
+        };
 
         if (lesson.isNew) {
           // Create new lesson
           await lessonService.createLesson({
             ...lessonData,
-            course_id: id
-          })
+            course_id: id,
+            status: "pending",
+            is_published: false,
+          });
         } else if (lesson.isExisting && lesson.id) {
           // Update existing lesson
-          await lessonService.updateLesson(lesson.id, lessonData)
+          await lessonService.updateLesson(lesson.id, {
+            ...lessonData,
+            status: "pending",
+            is_published: false,
+          });
         }
       }
 
       // Delete removed meetings
       for (const meetingId of deletedMeetings) {
-        await meetingService.deleteMeeting(meetingId)
+        await meetingService.deleteMeeting(meetingId);
       }
 
       // Create new meetings
-      for (const meeting of scheduledMeetings.filter(m => m.isNew)) {
+      for (const meeting of scheduledMeetings.filter((m) => m.isNew)) {
         await meetingService.createMeeting({
           title: meeting.title,
           description: meeting.description,
           scheduled_at: meeting.scheduled_at,
           duration_minutes: meeting.duration_minutes,
           meet_link: meeting.meet_link,
-          platform: meeting.platform || 'google_meet',
+          platform: meeting.platform || "google_meet",
           jitsi_room_name: meeting.jitsi_room_name || null,
           course_id: id,
-          created_by: meeting.created_by
-        })
+          created_by: meeting.created_by,
+        });
       }
 
       if (courseMeetLink) {
         if (primaryGoogleMeetId) {
           await meetingService.updateMeeting(primaryGoogleMeetId, {
             meet_link: courseMeetLink,
-            platform: 'google_meet',
+            platform: "google_meet",
             title: `Google Meet - ${courseData.title}`,
-            description: 'رابط الجلسة المباشرة — متاح للطلاب بعد قبول الدفع'
-          })
+            description: "رابط الجلسة المباشرة — متاح للطلاب بعد قبول الدفع",
+          });
         } else {
           const created = await meetingService.createMeeting({
             course_id: id,
             title: `Google Meet - ${courseData.title}`,
-            description: 'رابط الجلسة المباشرة — متاح للطلاب بعد قبول الدفع',
+            description: "رابط الجلسة المباشرة — متاح للطلاب بعد قبول الدفع",
             meet_link: courseMeetLink,
-            platform: 'google_meet',
+            platform: "google_meet",
             scheduled_at: new Date().toISOString(),
             duration_minutes: 60,
-            status: 'scheduled',
-            created_by: user?.id
-          })
-          setPrimaryGoogleMeetId(created?.id || null)
+            status: "scheduled",
+            created_by: user?.id,
+          });
+          setPrimaryGoogleMeetId(created?.id || null);
         }
       }
 
-      // Send notification to enrolled students about updates
-      await notificationService.notifyStudents({
-        course_id: id,
-        title: `تحديث في الكورس: ${courseData.title}`,
-        message: 'تم تحديث محتوى الكورس. تحقق من الدروس الجديدة!',
-        type: 'course_update'
-      })
+      // Send notification to enrolled students about updates if supported.
+      try {
+        await notificationService.notifyStudents({
+          course_id: id,
+          title: `تحديث في الكورس: ${courseData.title}`,
+          message: "تم تحديث محتوى الكورس. تحقق من الدروس الجديدة!",
+          type: "course_update",
+        });
+      } catch (err) {
+        console.warn("Notification API unavailable:", err);
+      }
 
-      setSuccess(t('teacherWizard.successCourseUpdated'))
+      setSuccess(
+        "Course submitted successfully. It is waiting for admin approval.",
+      );
       setTimeout(() => {
-        navigate('/dashboard')
-      }, 2000)
+        navigate("/teacher-dashboard");
+      }, 2000);
     } catch (err) {
-      setError(err.message || 'فشل تحديث الكورس')
+      setError(err.message || "فشل تحديث الكورس");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   // Format file size
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
 
   // Get file icon
   const getFileIcon = (type) => {
-    if (type.includes('pdf')) return '📄'
-    if (type.includes('spreadsheet') || type.includes('excel')) return '📊'
-    if (type.includes('presentation') || type.includes('powerpoint')) return '📑'
-    if (type.includes('document') || type.includes('word')) return '📝'
-    if (type.includes('image')) return '🖼️'
-    if (type.includes('video')) return '🎬'
-    return '📁'
-  }
+    if (type.includes("pdf")) return "📄";
+    if (type.includes("spreadsheet") || type.includes("excel")) return "📊";
+    if (type.includes("presentation") || type.includes("powerpoint"))
+      return "📑";
+    if (type.includes("document") || type.includes("word")) return "📝";
+    if (type.includes("image")) return "🖼️";
+    if (type.includes("video")) return "🎬";
+    return "📁";
+  };
 
   if (isLoading) {
     return (
@@ -585,11 +640,11 @@ const EditCourse = () => {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500 mx-auto mb-4"></div>
-            <p className="text-secondary-500">{t('common.loading')}</p>
+            <p className="text-secondary-500">{t("common.loading")}</p>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error && !courseData.title) {
@@ -597,12 +652,15 @@ const EditCourse = () => {
       <div className="create-course-page">
         <div className="create-course-container">
           <div className="alert alert-error">{error}</div>
-          <button onClick={() => navigate('/dashboard')} className="btn btn-primary mt-4">
-            {t('teacherWizard.backToDashboard')}
+          <button
+            onClick={() => navigate("/teacher-dashboard")}
+            className="btn btn-primary mt-4"
+          >
+            {t("teacherWizard.backToDashboard")}
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -610,25 +668,29 @@ const EditCourse = () => {
       <div className="create-course-container">
         {/* Header */}
         <div className="create-course-header">
-          <h1>✏️ {t('teacherWizard.editTitle')}</h1>
-          <p>{t('teacherWizard.editSubtitle')}</p>
+          <h1>✏️ {t("teacherWizard.editTitle")}</h1>
+          <p>{t("teacherWizard.editSubtitle")}</p>
         </div>
 
         {/* Progress Steps */}
         <div className="progress-steps">
-          <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-            <div className="step-number">{step > 1 ? '✓' : '1'}</div>
-            <span>{t('teacherWizard.stepCourseInfo')}</span>
+          <div
+            className={`step ${step >= 1 ? "active" : ""} ${step > 1 ? "completed" : ""}`}
+          >
+            <div className="step-number">{step > 1 ? "✓" : "1"}</div>
+            <span>{t("teacherWizard.stepCourseInfo")}</span>
           </div>
           <div className="step-line" />
-          <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-            <div className="step-number">{step > 2 ? '✓' : '2'}</div>
-            <span>{t('teacherWizard.stepEditLessons')}</span>
+          <div
+            className={`step ${step >= 2 ? "active" : ""} ${step > 2 ? "completed" : ""}`}
+          >
+            <div className="step-number">{step > 2 ? "✓" : "2"}</div>
+            <span>{t("teacherWizard.stepEditLessons")}</span>
           </div>
           <div className="step-line" />
-          <div className={`step ${step >= 3 ? 'active' : ''}`}>
+          <div className={`step ${step >= 3 ? "active" : ""}`}>
             <div className="step-number">3</div>
-            <span>{t('teacherWizard.stepReviewSave')}</span>
+            <span>{t("teacherWizard.stepReviewSave")}</span>
           </div>
         </div>
 
@@ -641,21 +703,21 @@ const EditCourse = () => {
           <div className="step-content">
             <div className="form-section">
               <h2>📝 معلومات الكورس الأساسية</h2>
-              
+
               <div className="form-group">
-                <label>{t('teacherWizard.courseTitle')}</label>
+                <label>{t("teacherWizard.courseTitle")}</label>
                 <input
                   type="text"
                   name="title"
                   value={courseData.title}
                   onChange={handleCourseChange}
-                  placeholder={t('teacherWizard.courseTitlePlaceholder')}
+                  placeholder={t("teacherWizard.courseTitlePlaceholder")}
                   className="form-control"
                 />
               </div>
 
               <div className="form-group">
-                <label>{t('teacherWizard.courseDescription')}</label>
+                <label>{t("teacherWizard.courseDescription")}</label>
                 <textarea
                   name="description"
                   value={courseData.description}
@@ -675,7 +737,7 @@ const EditCourse = () => {
                     onChange={handleCourseChange}
                     className="form-control"
                   >
-                    {categories.map(cat => (
+                    {categories.map((cat) => (
                       <option key={cat.value} value={cat.value}>
                         {cat.label}
                       </option>
@@ -684,14 +746,14 @@ const EditCourse = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>{t('teacherWizard.level')}</label>
+                  <label>{t("teacherWizard.level")}</label>
                   <select
                     name="level"
                     value={courseData.level}
                     onChange={handleCourseChange}
                     className="form-control"
                   >
-                    {levels.map(lvl => (
+                    {levels.map((lvl) => (
                       <option key={lvl.value} value={lvl.value}>
                         {lvl.label}
                       </option>
@@ -700,7 +762,7 @@ const EditCourse = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>{t('teacherWizard.price')}</label>
+                  <label>{t("teacherWizard.price")}</label>
                   <input
                     type="number"
                     name="price"
@@ -730,23 +792,25 @@ const EditCourse = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>حالة الكورس</label>
-                  <select
-                    name="is_published"
-                    value={courseData.is_published}
-                    onChange={(e) => setCourseData(prev => ({ ...prev, is_published: e.target.value === 'true' }))}
-                    className="form-control"
-                  >
-                    <option value="true">{t('teacherWizard.published')}</option>
-                    <option value="false">{t('teacherWizard.draft')}</option>
-                  </select>
+                  <div className="status-info">
+                    <span className="badge bg-orange-100 text-orange-800">
+                      {t("teacherWizard.draft")}
+                    </span>
+                  </div>
+                  <small className="form-hint">
+                    لا يمكن للمدرس تغيير حالة النشر. الكورس سيبقى كمسودة حتى
+                    يوافق عليه الأدمن.
+                  </small>
                 </div>
               </div>
 
               <div className="form-group">
-                <label>{t('teacherWizard.thumbnail')}</label>
-                <div 
+                <label>{t("teacherWizard.thumbnail")}</label>
+                <div
                   className="thumbnail-upload"
-                  onClick={() => document.getElementById('thumbnail-input').click()}
+                  onClick={() =>
+                    document.getElementById("thumbnail-input").click()
+                  }
                 >
                   {courseData.thumbnail_url ? (
                     <img src={courseData.thumbnail_url} alt="Thumbnail" />
@@ -754,36 +818,37 @@ const EditCourse = () => {
                     <div className="upload-placeholder">
                       <span className="upload-icon">📷</span>
                       <p>انقر لرفع صورة الكورس</p>
-                      <small>{t('teacherWizard.thumbnailHint')}</small>
+                      <small>{t("teacherWizard.thumbnailHint")}</small>
                     </div>
                   )}
-                  {uploadProgress.thumbnail !== null && uploadProgress.thumbnail !== undefined && (
-                    <div className="upload-progress">
-                      <div 
-                        className="progress-bar" 
-                        style={{ width: `${uploadProgress.thumbnail}%` }}
-                      />
-                    </div>
-                  )}
+                  {uploadProgress.thumbnail !== null &&
+                    uploadProgress.thumbnail !== undefined && (
+                      <div className="upload-progress">
+                        <div
+                          className="progress-bar"
+                          style={{ width: `${uploadProgress.thumbnail}%` }}
+                        />
+                      </div>
+                    )}
                 </div>
                 <input
                   id="thumbnail-input"
                   type="file"
                   accept="image/*"
                   onChange={handleThumbnailUpload}
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                 />
               </div>
             </div>
 
             <div className="step-actions">
-              <button 
+              <button
                 className="btn btn-secondary"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate("/teacher-dashboard")}
               >
                 إلغاء
               </button>
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={() => setStep(2)}
                 disabled={!courseData.title || !courseData.description}
@@ -804,14 +869,14 @@ const EditCourse = () => {
                 <div className="flex flex-wrap gap-2">
                   <button
                     className="btn btn-meet"
-                    onClick={() => openMeetingModal('jitsi')}
+                    onClick={() => openMeetingModal("jitsi")}
                   >
                     <span>🎥</span>
                     إنشاء Jitsi
                   </button>
                   <button
                     className="btn btn-secondary"
-                    onClick={() => openMeetingModal('google_meet')}
+                    onClick={() => openMeetingModal("google_meet")}
                   >
                     <span>📅</span>
                     Google Meet
@@ -827,15 +892,25 @@ const EditCourse = () => {
                     <div key={index} className="meeting-card">
                       <div className="meeting-info">
                         <h4>{meeting.title}</h4>
-                        <p>{new Date(meeting.scheduled_at).toLocaleString('ar-EG')}</p>
-                        <span className="meeting-duration">{meeting.duration_minutes} دقيقة</span>
+                        <p>
+                          {new Date(meeting.scheduled_at).toLocaleString(
+                            "ar-EG",
+                          )}
+                        </p>
+                        <span className="meeting-duration">
+                          {meeting.duration_minutes} دقيقة
+                        </span>
                         <span className="meeting-platform">
-                          {meeting.platform === 'jitsi' ? '🎥 Jitsi' : '📅 Google Meet'}
+                          {meeting.platform === "jitsi"
+                            ? "🎥 Jitsi"
+                            : "📅 Google Meet"}
                         </span>
                       </div>
                       <div className="meeting-actions">
-                        {meeting.platform === 'jitsi' ? (
-                          <span className="btn btn-link">غرفة: {meeting.jitsi_room_name}</span>
+                        {meeting.platform === "jitsi" ? (
+                          <span className="btn btn-link">
+                            غرفة: {meeting.jitsi_room_name}
+                          </span>
                         ) : (
                           <>
                             <a
@@ -881,7 +956,7 @@ const EditCourse = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>{t('teacherWizard.lessonDescription')}</label>
+                  <label>{t("teacherWizard.lessonDescription")}</label>
                   <textarea
                     name="description"
                     value={currentLesson.description}
@@ -893,26 +968,31 @@ const EditCourse = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>{t('teacherWizard.contentType')}</label>
+                  <label>{t("teacherWizard.contentType")}</label>
                   <div className="content-type-selector">
-                    {contentTypes.map(type => (
+                    {contentTypes.map((type) => (
                       <button
                         key={type.value}
-                        className={`type-btn ${currentLesson.content_type === type.value ? 'active' : ''}`}
-                        onClick={() => setCurrentLesson(prev => ({ ...prev, content_type: type.value }))}
+                        className={`type-btn ${currentLesson.content_type === type.value ? "active" : ""}`}
+                        onClick={() =>
+                          setCurrentLesson((prev) => ({
+                            ...prev,
+                            content_type: type.value,
+                          }))
+                        }
                       >
                         <span className="type-icon">{type.icon}</span>
-                        <span>{type.label.split(' ')[1]}</span>
+                        <span>{type.label.split(" ")[1]}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Video Upload */}
-                {currentLesson.content_type === 'video' && (
+                {currentLesson.content_type === "video" && (
                   <div className="form-group">
                     <label>رفع الفيديو</label>
-                    <div 
+                    <div
                       className="video-upload"
                       onClick={() => videoInputRef.current?.click()}
                     >
@@ -928,22 +1008,23 @@ const EditCourse = () => {
                           <small>MP4, WebM حتى 500MB</small>
                         </div>
                       )}
-                      {uploadProgress.video !== null && uploadProgress.video !== undefined && (
-                        <div className="upload-progress">
-                          <div 
-                            className="progress-bar" 
-                            style={{ width: `${uploadProgress.video}%` }}
-                          />
-                          <span>{uploadProgress.video}%</span>
-                        </div>
-                      )}
+                      {uploadProgress.video !== null &&
+                        uploadProgress.video !== undefined && (
+                          <div className="upload-progress">
+                            <div
+                              className="progress-bar"
+                              style={{ width: `${uploadProgress.video}%` }}
+                            />
+                            <span>{uploadProgress.video}%</span>
+                          </div>
+                        )}
                     </div>
                     <input
                       ref={videoInputRef}
                       type="file"
                       accept="video/*"
                       onChange={handleVideoUpload}
-                      style={{ display: 'none' }}
+                      style={{ display: "none" }}
                     />
                   </div>
                 )}
@@ -951,7 +1032,7 @@ const EditCourse = () => {
                 {/* File Uploads */}
                 <div className="form-group">
                   <label>الملفات المرفقة (PDF, Excel, صور)</label>
-                  <div 
+                  <div
                     className="files-upload"
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -967,20 +1048,24 @@ const EditCourse = () => {
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*"
                     multiple
                     onChange={handleFileUpload}
-                    style={{ display: 'none' }}
+                    style={{ display: "none" }}
                   />
 
                   {/* Uploaded Files List */}
                   {uploadedFiles.length > 0 && (
                     <div className="uploaded-files">
-                      {uploadedFiles.map(file => (
+                      {uploadedFiles.map((file) => (
                         <div key={file.id} className="file-item">
-                          <span className="file-icon">{getFileIcon(file.type)}</span>
+                          <span className="file-icon">
+                            {getFileIcon(file.type)}
+                          </span>
                           <div className="file-info">
                             <p className="file-name">{file.name}</p>
-                            <span className="file-size">{formatFileSize(file.size)}</span>
+                            <span className="file-size">
+                              {formatFileSize(file.size)}
+                            </span>
                           </div>
-                          <button 
+                          <button
                             className="btn-remove"
                             onClick={() => removeFile(file.id)}
                           >
@@ -992,14 +1077,19 @@ const EditCourse = () => {
                   )}
 
                   {/* Upload Progress */}
-                  {Object.keys(uploadProgress).filter(k => k.startsWith('file_')).map(key => (
-                    <div key={key} className="upload-progress-item">
-                      <div className="progress-bar" style={{ width: `${uploadProgress[key]}%` }} />
-                    </div>
-                  ))}
+                  {Object.keys(uploadProgress)
+                    .filter((k) => k.startsWith("file_"))
+                    .map((key) => (
+                      <div key={key} className="upload-progress-item">
+                        <div
+                          className="progress-bar"
+                          style={{ width: `${uploadProgress[key]}%` }}
+                        />
+                      </div>
+                    ))}
                 </div>
 
-                <button 
+                <button
                   className="btn btn-add-lesson"
                   onClick={addLesson}
                   disabled={!currentLesson.title}
@@ -1019,31 +1109,41 @@ const EditCourse = () => {
                       <div className="lesson-info">
                         <h4>{lesson.title}</h4>
                         <div className="lesson-meta">
-                          <span>{contentTypes.find(t => t.value === lesson.content_type)?.icon}</span>
+                          <span>
+                            {
+                              contentTypes.find(
+                                (t) => t.value === lesson.content_type,
+                              )?.icon
+                            }
+                          </span>
                           <span>{lesson.duration} دقيقة</span>
                           {lesson.files && lesson.files.length > 0 && (
                             <span>📎 {lesson.files.length} ملفات</span>
                           )}
                           {lesson.isExisting && (
-                            <span className="badge bg-blue-100 text-blue-800">موجود</span>
+                            <span className="badge bg-blue-100 text-blue-800">
+                              موجود
+                            </span>
                           )}
                           {lesson.isNew && (
-                            <span className="badge bg-green-100 text-green-800">جديد</span>
+                            <span className="badge bg-green-100 text-green-800">
+                              جديد
+                            </span>
                           )}
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           className="btn-edit"
                           onClick={() => updateLesson(index)}
-                          title={t('teacherWizard.editLesson')}
+                          title={t("teacherWizard.editLesson")}
                         >
                           ✏️
                         </button>
-                        <button 
+                        <button
                           className="btn-remove"
                           onClick={() => removeLesson(index)}
-                          title={t('teacherWizard.deleteLesson')}
+                          title={t("teacherWizard.deleteLesson")}
                         >
                           🗑️
                         </button>
@@ -1055,14 +1155,11 @@ const EditCourse = () => {
             </div>
 
             <div className="step-actions">
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setStep(1)}
-              >
+              <button className="btn btn-secondary" onClick={() => setStep(1)}>
                 <span>←</span>
                 السابق
               </button>
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={() => setStep(3)}
                 disabled={lessons.length === 0}
@@ -1083,8 +1180,8 @@ const EditCourse = () => {
               <div className="review-section">
                 <div className="review-card">
                   {courseData.thumbnail_url && (
-                    <img 
-                      src={courseData.thumbnail_url} 
+                    <img
+                      src={courseData.thumbnail_url}
                       alt={courseData.title}
                       className="review-thumbnail"
                     />
@@ -1093,11 +1190,24 @@ const EditCourse = () => {
                     <h3>{courseData.title}</h3>
                     <p>{courseData.description}</p>
                     <div className="review-meta">
-                      <span>📁 {categories.find(c => c.value === courseData.category)?.label}</span>
-                      <span>📊 {levels.find(l => l.value === courseData.level)?.label}</span>
+                      <span>
+                        📁{" "}
+                        {
+                          categories.find(
+                            (c) => c.value === courseData.category,
+                          )?.label
+                        }
+                      </span>
+                      <span>
+                        📊{" "}
+                        {
+                          levels.find((l) => l.value === courseData.level)
+                            ?.label
+                        }
+                      </span>
                       <span>💰 ${courseData.price} USD</span>
-                      <span className={`badge ${courseData.is_published ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                        {courseData.is_published ? t('teacherWizard.published') : t('teacherWizard.draft')}
+                      <span className="badge bg-orange-100 text-orange-800">
+                        {t("teacherWizard.draft")}
                       </span>
                     </div>
                   </div>
@@ -1111,10 +1221,16 @@ const EditCourse = () => {
                         <span className="lesson-num">{index + 1}</span>
                         {lesson.title}
                         <span className="lesson-type">
-                          {contentTypes.find(t => t.value === lesson.content_type)?.icon}
+                          {
+                            contentTypes.find(
+                              (t) => t.value === lesson.content_type,
+                            )?.icon
+                          }
                         </span>
                         {lesson.isNew && (
-                          <span className="badge bg-green-100 text-green-800 ml-2">جديد</span>
+                          <span className="badge bg-green-100 text-green-800 ml-2">
+                            جديد
+                          </span>
                         )}
                       </li>
                     ))}
@@ -1127,9 +1243,14 @@ const EditCourse = () => {
                     <ul>
                       {scheduledMeetings.map((meeting, index) => (
                         <li key={index}>
-                          {meeting.title} - {new Date(meeting.scheduled_at).toLocaleDateString('ar-EG')}
+                          {meeting.title} -{" "}
+                          {new Date(meeting.scheduled_at).toLocaleDateString(
+                            "ar-EG",
+                          )}
                           {meeting.isNew && (
-                            <span className="badge bg-green-100 text-green-800 ml-2">جديد</span>
+                            <span className="badge bg-green-100 text-green-800 ml-2">
+                              جديد
+                            </span>
                           )}
                         </li>
                       ))}
@@ -1139,13 +1260,17 @@ const EditCourse = () => {
 
                 {deletedLessons.length > 0 && (
                   <div className="review-deleted">
-                    <h4 className="text-red-600">🗑️ سيتم حذف {deletedLessons.length} دروس</h4>
+                    <h4 className="text-red-600">
+                      🗑️ سيتم حذف {deletedLessons.length} دروس
+                    </h4>
                   </div>
                 )}
 
                 {deletedMeetings.length > 0 && (
                   <div className="review-deleted">
-                    <h4 className="text-red-600">🗑️ سيتم حذف {deletedMeetings.length} جلسات</h4>
+                    <h4 className="text-red-600">
+                      🗑️ سيتم حذف {deletedMeetings.length} جلسات
+                    </h4>
                   </div>
                 )}
               </div>
@@ -1159,14 +1284,11 @@ const EditCourse = () => {
             </div>
 
             <div className="step-actions">
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setStep(2)}
-              >
+              <button className="btn btn-secondary" onClick={() => setStep(2)}>
                 <span>←</span>
                 السابق
               </button>
-              <button 
+              <button
                 className="btn btn-success"
                 onClick={handleSubmit}
                 disabled={isSaving}
@@ -1190,11 +1312,18 @@ const EditCourse = () => {
 
       {/* Google Meet Modal */}
       {showMeetingModal && (
-        <div className="modal-overlay" onClick={() => setShowMeetingModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowMeetingModal(false)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{meetingPlatform === 'jitsi' ? '🎥 إنشاء جلسة Jitsi داخل المنصة' : '📅 إنشاء جلسة Google Meet'}</h3>
-              <button 
+              <h3>
+                {meetingPlatform === "jitsi"
+                  ? "🎥 إنشاء جلسة Jitsi داخل المنصة"
+                  : "📅 إنشاء جلسة Google Meet"}
+              </h3>
+              <button
                 className="modal-close"
                 onClick={() => setShowMeetingModal(false)}
               >
@@ -1207,7 +1336,12 @@ const EditCourse = () => {
                 <input
                   type="text"
                   value={meetingData.title}
-                  onChange={e => setMeetingData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) =>
+                    setMeetingData((prev) => ({
+                      ...prev,
+                      title: e.target.value,
+                    }))
+                  }
                   placeholder="مثال: جلسة مراجعة الفصل الأول"
                   className="form-control"
                 />
@@ -1217,7 +1351,12 @@ const EditCourse = () => {
                 <label>الوصف</label>
                 <textarea
                   value={meetingData.description}
-                  onChange={e => setMeetingData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setMeetingData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="وصف مختصر للجلسة..."
                   className="form-control"
                   rows={3}
@@ -1230,17 +1369,27 @@ const EditCourse = () => {
                   <input
                     type="datetime-local"
                     value={meetingData.scheduled_at}
-                    onChange={e => setMeetingData(prev => ({ ...prev, scheduled_at: e.target.value }))}
+                    onChange={(e) =>
+                      setMeetingData((prev) => ({
+                        ...prev,
+                        scheduled_at: e.target.value,
+                      }))
+                    }
                     className="form-control"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>{t('teacherWizard.duration')}</label>
+                  <label>{t("teacherWizard.duration")}</label>
                   <input
                     type="number"
                     value={meetingData.duration_minutes}
-                    onChange={e => setMeetingData(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) }))}
+                    onChange={(e) =>
+                      setMeetingData((prev) => ({
+                        ...prev,
+                        duration_minutes: parseInt(e.target.value),
+                      }))
+                    }
                     min="15"
                     max="180"
                     className="form-control"
@@ -1249,25 +1398,31 @@ const EditCourse = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={() => setShowMeetingModal(false)}
               >
                 إلغاء
               </button>
-              <button 
+              <button
                 className="btn btn-meet"
                 onClick={createMeetingSession}
-                disabled={isLoading || !meetingData.title || !meetingData.scheduled_at}
+                disabled={
+                  isLoading || !meetingData.title || !meetingData.scheduled_at
+                }
               >
-                {isLoading ? t('teacherWizard.creating') : (meetingPlatform === 'jitsi' ? '🎥 إنشاء جلسة Jitsi' : '📅 إنشاء الرابط')}
+                {isLoading
+                  ? t("teacherWizard.creating")
+                  : meetingPlatform === "jitsi"
+                    ? "🎥 إنشاء جلسة Jitsi"
+                    : "📅 إنشاء الرابط"}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default EditCourse
+export default EditCourse;

@@ -4,6 +4,7 @@ const config = require("./config");
 // Repositories
 const PrismaUserRepository = require("./infrastructure/database/repositories/PrismaUserRepository");
 const PrismaTokenRepository = require("./infrastructure/database/repositories/PrismaTokenRepository");
+const PrismaAdminUserRepository = require("./infrastructure/database/repositories/PrismaAdminUserRepository");
 const SupabaseCourseRepository = require("./infrastructure/database/repositories/SupabaseCourseRepository");
 const SupabaseMeetingRepository = require("./infrastructure/database/repositories/SupabaseMeetingRepository");
 const SupabaseChatRepository = require("./infrastructure/database/repositories/SupabaseChatRepository");
@@ -35,6 +36,7 @@ const GoogleOAuthUseCase = require("./application/use-cases/Authenticatioon/Goog
 
 // Controllers
 const AuthController = require("./interfaces/http/controllers/AuthController");
+const AdminUserController = require("./interfaces/http/controllers/AdminUserController");
 
 /**
  * Dependency Injection Container
@@ -46,6 +48,7 @@ function createContainer() {
   // 1. Init Repositories
   const userRepository = new PrismaUserRepository({ prisma });
   const tokenRepository = new PrismaTokenRepository({ prisma });
+  const adminUserRepository = new PrismaAdminUserRepository({ prisma });
 
   // 2. Init Services
   const hashService = new BcryptHashService();
@@ -284,6 +287,13 @@ function createContainer() {
     GetSettingsUseCase,
     UpdateSettingsUseCase,
   } = require("./application/use-cases/Settings/SettingsUseCases");
+  const {
+    ListAdminUsersUseCase,
+    GetAdminUserDetailsUseCase,
+    UpdateAdminUserRoleUseCase,
+    SetAdminUserSuspendedUseCase,
+    DeleteAdminUserUseCase,
+  } = require("./application/use-cases/Admin/AdminUserUseCases");
 
   const listMeetingsUseCase = new ListMeetingsUseCase({ meetingRepository });
   const getMeetingUseCase = new GetMeetingUseCase({ meetingRepository });
@@ -367,6 +377,21 @@ function createContainer() {
   const updateSettingsUseCase = new UpdateSettingsUseCase({
     settingsRepository,
   });
+  const listAdminUsersUseCase = new ListAdminUsersUseCase({
+    adminUserRepository,
+  });
+  const getAdminUserDetailsUseCase = new GetAdminUserDetailsUseCase({
+    adminUserRepository,
+  });
+  const updateAdminUserRoleUseCase = new UpdateAdminUserRoleUseCase({
+    adminUserRepository,
+  });
+  const setAdminUserSuspendedUseCase = new SetAdminUserSuspendedUseCase({
+    adminUserRepository,
+  });
+  const deleteAdminUserUseCase = new DeleteAdminUserUseCase({
+    adminUserRepository,
+  });
 
   // 4. Init Controllers
   const authController = new AuthController({
@@ -379,6 +404,13 @@ function createContainer() {
     getProfileUseCase,
     updateProfileUseCase,
     googleOAuthUseCase,
+  });
+  const adminUserController = new AdminUserController({
+    listUseCase: listAdminUsersUseCase,
+    detailsUseCase: getAdminUserDetailsUseCase,
+    updateRoleUseCase: updateAdminUserRoleUseCase,
+    setSuspendedUseCase: setAdminUserSuspendedUseCase,
+    deleteUseCase: deleteAdminUserUseCase,
   });
   const EnrollmentController = require("./interfaces/http/controllers/EnrollmentController");
   const enrollmentController = new EnrollmentController({
@@ -495,6 +527,7 @@ function createContainer() {
     prisma,
     tokenService,
     authController,
+    adminUserController,
     courseController,
     lessonController,
     blogController,

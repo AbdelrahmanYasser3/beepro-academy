@@ -49,6 +49,14 @@ function createApp(container) {
   );
   app.use("/api/v1/auth", authRoutes);
 
+  const createAdminUserRoutes = require("./interfaces/http/routes/adminUserRoutes");
+  const adminUserRoutes = createAdminUserRoutes(
+    container.adminUserController,
+    authenticate,
+    authorize,
+  );
+  app.use("/api/v1/admin", adminUserRoutes);
+
   // Courses
   const createCourseRoutes = require("./interfaces/http/routes/courseRoutes");
   const courseRoutes = createCourseRoutes(

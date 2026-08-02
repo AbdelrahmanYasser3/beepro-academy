@@ -304,10 +304,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updatePassword = async (newPassword) => {
+  const updatePassword = async (payload) => {
     try {
       setError(null);
-      await authService.updatePassword(newPassword);
+      let result = null;
+      if (typeof payload === "string") {
+        result = await authService.updatePassword({ newPassword: payload });
+      } else if (payload?.email && payload?.otp && payload?.newPassword) {
+        result = await authService.confirmResetPassword({
+          email: payload.email,
+          otp: payload.otp,
+          newPassword: payload.newPassword,
+        });
+      } else if (payload?.currentPassword && payload?.newPassword) {
+        result = await authService.updatePassword(payload);
+      } else {
+        throw new Error(
+          "Password update requires current password or reset credentials.",
+        );
+      }
+
+      if (result?.disabled) {
+        return { success: false, error: result.reason };
+      }
       return { success: true };
     } catch (err) {
       const message = formatErrorMessage(err);
@@ -325,6 +344,9 @@ export const AuthProvider = ({ children }) => {
         user.id,
         profileData,
       );
+      if (updatedProfile?.disabled) {
+        return { success: false, error: updatedProfile.reason };
+      }
       setUser((prev) => ({ ...prev, ...updatedProfile }));
       return { success: true, profile: updatedProfile };
     } catch (err) {
@@ -340,6 +362,13 @@ export const AuthProvider = ({ children }) => {
       if (!user?.id) throw new Error("No user logged in");
 
       const { url } = await userService.uploadAvatar(user.id, file);
+      if (!url) {
+        return {
+          success: false,
+          error:
+            "Profile editing is temporarily disabled until backend support is finalized.",
+        };
+      }
       setUser((prev) => ({ ...prev, avatar_url: url }));
       return { success: true, url };
     } catch (err) {

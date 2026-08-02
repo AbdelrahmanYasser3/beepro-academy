@@ -1,12 +1,12 @@
+const requireSupabase = require("./requireSupabase");
+
 class SupabaseNotificationRepository {
   constructor({ supabase }) {
     this.supabase = supabase;
   }
 
   async list({ userId, limit = 20, offset = 0 } = {}) {
-    if (!this.supabase) {
-      return { items: [], pagination: { total: 0, limit, offset } };
-    }
+    requireSupabase(this.supabase);
 
     let query = this.supabase
       .from("notifications")
@@ -25,7 +25,7 @@ class SupabaseNotificationRepository {
   }
 
   async markRead(id, userId) {
-    if (!this.supabase) return { id, is_read: true };
+    requireSupabase(this.supabase);
     const { data, error } = await this.supabase
       .from("notifications")
       .update({ is_read: true })
@@ -38,7 +38,7 @@ class SupabaseNotificationRepository {
   }
 
   async markAllRead(userId) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase
       .from("notifications")
       .update({ is_read: true })
@@ -48,7 +48,7 @@ class SupabaseNotificationRepository {
   }
 
   async delete(id, userId) {
-    if (!this.supabase) return { success: true };
+    requireSupabase(this.supabase);
     const { error } = await this.supabase
       .from("notifications")
       .delete()
